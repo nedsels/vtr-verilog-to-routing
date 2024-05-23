@@ -189,6 +189,11 @@ void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup
     vpr_print_args(argc, argv);
 
     vpr_init_with_options(options, vpr_setup, arch);
+
+    // Create file for router lookahead verification
+    std::ofstream lookahead_verifier_csv("lookahead_verifier_info.csv", std::ios::out);
+    lookahead_verifier_csv << "source node,sink node,current node,num. nodes from sink,actual distance,predicted distance,error(%)" << std::endl;
+    lookahead_verifier_csv.close();
 }
 
 /**

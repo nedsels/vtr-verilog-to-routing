@@ -483,13 +483,13 @@ void RouteTree::print(void) const {
  * returns a tuple: RouteTreeNode of the branch it adds to the route tree and
  * RouteTreeNode of the SINK it adds to the routing. */
 std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
-RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat) {
+RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat, RouterLookahead& router_lookahead, const t_conn_cost_params cost_params) {
     /* Lock the route tree for writing. At least on Linux this shouldn't have an impact on single-threaded code */
     std::unique_lock<std::mutex> write_lock(_write_mutex);
 
     //Create a new subtree from the target in hptr to existing routing
     vtr::optional<RouteTreeNode&> start_of_new_subtree_rt_node, sink_rt_node;
-    std::tie(start_of_new_subtree_rt_node, sink_rt_node) = add_subtree_from_heap(hptr, target_net_pin_index, is_flat);
+    std::tie(start_of_new_subtree_rt_node, sink_rt_node) = add_subtree_from_heap(hptr, target_net_pin_index, is_flat, router_lookahead, cost_params);
 
     if (!start_of_new_subtree_rt_node)
         return {vtr::nullopt, *sink_rt_node};
@@ -512,7 +512,7 @@ RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRoute
  * to the SINK indicated by hptr. Returns the first (most upstream) new rt_node,
  * and the rt_node of the new SINK. Traverses up from SINK  */
 std::tuple<vtr::optional<RouteTreeNode&>, vtr::optional<RouteTreeNode&>>
-RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat) {
+RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat, RouterLookahead& router_lookahead, const t_conn_cost_params cost_params) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -545,6 +545,34 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
         new_iswitch = RRSwitchId(rr_graph.rr_nodes().edge_switch(edge));
     }
     new_branch_iswitches.push_back(new_iswitch);
+
+    /** Verify router lookahead.
+     *
+     */
+     std::ofstream lookahead_verifier_csv("lookahead_verifier_info.csv", std::ios::app);
+
+    float total_path_cost = route_ctx.rr_node_route_inf[sink_inode].backward_path_cost;
+
+    for (int i = 1; i < new_branch_inodes.size(); ++i) {
+        auto current_node = route_ctx.rr_node_route_inf[new_branch_inodes[i]];
+        float current_backward_cost = current_node.backward_path_cost;
+
+        float djikstra_projection = total_path_cost - current_backward_cost;
+        float lookahead_projection = router_lookahead.get_expected_cost(new_branch_inodes[i], sink_inode, cost_params, 0.0); // TODO: assuming R_upstream is 0
+
+        float error = (lookahead_projection / djikstra_projection) - 1.0;
+
+        lookahead_verifier_csv << new_branch_inodes.back();         // source node
+        lookahead_verifier_csv << "," << new_branch_inodes.front(); // sink node
+        lookahead_verifier_csv << "," << new_branch_inodes[i];      // current node
+        lookahead_verifier_csv << "," << i;                         // num nodes from sink
+        lookahead_verifier_csv << "," << djikstra_projection;       // actual distance
+        lookahead_verifier_csv << "," << lookahead_projection;      // predicted distance
+        lookahead_verifier_csv << "," << error * 100;               // error
+    }
+
+    lookahead_verifier_csv << std::endl;
+    lookahead_verifier_csv.close();
 
     /* Build the new tree branch starting from the existing node we found */
     RouteTreeNode* last_node = _rr_node_to_rt_node[new_inode];
