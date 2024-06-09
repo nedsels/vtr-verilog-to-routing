@@ -90,7 +90,7 @@ namespace {
             std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr,
                                                                            router_opts.flat_routing,
                                                                            router.get_router_lookahead(), cost_params,
-                                                                           1, conn_params.net_id_);
+                                                                           1, net_list, conn_params.net_id_);
             delay = rt_node_of_sink.value().Tdel;
         }
 

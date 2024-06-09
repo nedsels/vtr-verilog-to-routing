@@ -133,7 +133,7 @@ static void do_one_route(const Netlist<>& net_list,
         std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr,
                                                                        router_opts.flat_routing,
                                                                        router.get_router_lookahead(), cost_params, 1,
-                                                                       net_list, conn_params.net_id_,);
+                                                                       net_list, conn_params.net_id_);
 
         //find delay
         float net_delay = rt_node_of_sink.value().Tdel;
