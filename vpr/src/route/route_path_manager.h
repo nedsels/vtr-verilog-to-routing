@@ -53,7 +53,7 @@ class RoutingContext;
  * 
  * If the _is_enabled flag is true, alloc_path_struct allocates t_heap_path structures, otherwise will be a NOOP */
 class PathManager {
-public:
+  public:
     PathManager();
 
     ~PathManager();
@@ -75,9 +75,7 @@ public:
     void set_enabled(bool enable);
 
     // Insert the partial path data into the main route context traceback
-    void insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost,
-                                              float backward_path_delay, float backward_path_congestion,
-                                              RoutingContext& route_ctx);
+    void insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost, float backward_path_delay, float backward_path_congestion, RoutingContext& route_ctx);
 
     // Dynamically create a t_heap_path structure to be used in the heap
     // Will return unless RCV is enabled
@@ -105,7 +103,7 @@ public:
     // Call this after each sink is routed
     void update_route_tree_set(t_heap_path* cheapest_path_struct);
 
-private:
+  private:
     // Is RCV enabled and thus route_tree_nodes in use
     bool is_enabled_;
 

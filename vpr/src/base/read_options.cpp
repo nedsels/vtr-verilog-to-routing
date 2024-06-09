@@ -1290,914 +1290,913 @@ struct ParsePostSynthNetlistUnconnOutputHandling {
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args) {
     std::string description =
-            "Implements the specified circuit onto the target FPGA architecture"
-            " by performing packing/placement/routing, and analyzes the result.\n"
-            "\n"
-            "Attempts to find the minimum routable channel width, unless a fixed"
-            " channel width is specified with --route_chan_width.";
+        "Implements the specified circuit onto the target FPGA architecture"
+        " by performing packing/placement/routing, and analyzes the result.\n"
+        "\n"
+        "Attempts to find the minimum routable channel width, unless a fixed"
+        " channel width is specified with --route_chan_width.";
     auto parser = argparse::ArgumentParser(prog_name, description);
 
     std::string epilog = vtr::replace_all(
-            "Usage Examples\n"
-            "--------------\n"
-            "   #Find the minimum routable channel width of my_circuit on my_arch\n"
-            "   {prog} my_arch.xml my_circuit.blif\n"
-            "\n"
-            "   #Show interactive graphics\n"
-            "   {prog} my_arch.xml my_circuit.blif --disp on\n"
-            "\n"
-            "   #Implement at a fixed channel width of 100\n"
-            "   {prog} my_arch.xml my_circuit.blif --route_chan_width 100\n"
-            "\n"
-            "   #Perform packing and placement only\n"
-            "   {prog} my_arch.xml my_circuit.blif --pack --place\n"
-            "\n"
-            "   #Generate post-implementation netlist\n"
-            "   {prog} my_arch.xml my_circuit.blif --gen_post_synthesis_netlist on\n"
-            "\n"
-            "   #Write routing-resource graph to a file\n"
-            "   {prog} my_arch.xml my_circuit.blif --write_rr_graph my_rr_graph.xml\n"
-            "\n"
-            "\n"
-            "For additional documentation see: https://docs.verilogtorouting.org",
-            "{prog}", parser.prog());
+        "Usage Examples\n"
+        "--------------\n"
+        "   #Find the minimum routable channel width of my_circuit on my_arch\n"
+        "   {prog} my_arch.xml my_circuit.blif\n"
+        "\n"
+        "   #Show interactive graphics\n"
+        "   {prog} my_arch.xml my_circuit.blif --disp on\n"
+        "\n"
+        "   #Implement at a fixed channel width of 100\n"
+        "   {prog} my_arch.xml my_circuit.blif --route_chan_width 100\n"
+        "\n"
+        "   #Perform packing and placement only\n"
+        "   {prog} my_arch.xml my_circuit.blif --pack --place\n"
+        "\n"
+        "   #Generate post-implementation netlist\n"
+        "   {prog} my_arch.xml my_circuit.blif --gen_post_synthesis_netlist on\n"
+        "\n"
+        "   #Write routing-resource graph to a file\n"
+        "   {prog} my_arch.xml my_circuit.blif --write_rr_graph my_rr_graph.xml\n"
+        "\n"
+        "\n"
+        "For additional documentation see: https://docs.verilogtorouting.org",
+        "{prog}", parser.prog());
     parser.epilog(epilog);
 
     auto& pos_grp = parser.add_argument_group("positional arguments");
     pos_grp.add_argument(args.ArchFile, "architecture")
-            .help(
-                    "FPGA Architecture description file\n"
-                    "   - XML: this is the default frontend format\n"
-                    "   - FPGA Interchange: device architecture file in the FPGA Interchange format");
+        .help(
+            "FPGA Architecture description file\n"
+            "   - XML: this is the default frontend format\n"
+            "   - FPGA Interchange: device architecture file in the FPGA Interchange format");
 
     pos_grp.add_argument(args.CircuitName, "circuit")
-            .help("Circuit file (or circuit name if --circuit_file specified)");
+        .help("Circuit file (or circuit name if --circuit_file specified)");
 
     auto& stage_grp = parser.add_argument_group("stage options");
 
     stage_grp.add_argument<bool, ParseOnOff>(args.do_packing, "--pack")
-            .help("Run packing")
-            .action(argparse::Action::STORE_TRUE)
-            .default_value("off");
+        .help("Run packing")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
 
     stage_grp.add_argument<bool, ParseOnOff>(args.do_placement, "--place")
-            .help("Run placement")
-            .action(argparse::Action::STORE_TRUE)
-            .default_value("off");
+        .help("Run placement")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
 
     stage_grp.add_argument<bool, ParseOnOff>(args.do_routing, "--route")
-            .help("Run routing")
-            .action(argparse::Action::STORE_TRUE)
-            .default_value("off");
+        .help("Run routing")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
 
     stage_grp.add_argument<bool, ParseOnOff>(args.do_analysis, "--analysis")
-            .help("Run analysis")
-            .action(argparse::Action::STORE_TRUE)
-            .default_value("off");
+        .help("Run analysis")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
 
     stage_grp.epilog(
-            "If none of the stage options are specified, all stages are run.\n"
-            "Analysis is always run after routing, unless the implementation\n"
-            "is illegal.\n"
-            "\n"
-            "If the implementation is illegal analysis can be forced by explicitly\n"
-            "specifying the --analysis option.");
+        "If none of the stage options are specified, all stages are run.\n"
+        "Analysis is always run after routing, unless the implementation\n"
+        "is illegal.\n"
+        "\n"
+        "If the implementation is illegal analysis can be forced by explicitly\n"
+        "specifying the --analysis option.");
 
     auto& gfx_grp = parser.add_argument_group("graphics options");
 
     gfx_grp.add_argument<bool, ParseOnOff>(args.show_graphics, "--disp")
-            .help("Enable or disable interactive graphics")
-            .default_value("off");
+        .help("Enable or disable interactive graphics")
+        .default_value("off");
 
     gfx_grp.add_argument(args.GraphPause, "--auto")
-            .help(
-                    "Controls how often VPR pauses for interactive"
-                    " graphics (requiring Proceed to be clicked)."
-                    " Higher values pause less frequently")
-            .default_value("1")
-            .choices({"0", "1", "2"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how often VPR pauses for interactive"
+            " graphics (requiring Proceed to be clicked)."
+            " Higher values pause less frequently")
+        .default_value("1")
+        .choices({"0", "1", "2"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gfx_grp.add_argument<bool, ParseOnOff>(args.save_graphics, "--save_graphics")
-            .help("Save all graphical contents to PDF files")
-            .default_value("off");
+        .help("Save all graphical contents to PDF files")
+        .default_value("off");
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
-            .help(
-                    "A set of semi-colon seperated graphics commands. \n"
-                    "Commands must be surrounded by quotation marks (e.g. --graphics_commands \"save_graphics place.png\")\n"
-                    "   Commands:\n"
-                    "      * save_graphics <file>\n"
-                    "           Saves graphics to the specified file (.png/.pdf/\n"
-                    "           .svg). If <file> contains '{i}', it will be\n"
-                    "           replaced with an integer which increments\n"
-                    "           each time graphics is invoked.\n"
-                    "      * set_macros <int>\n"
-                    "           Sets the placement macro drawing state\n"
-                    "      * set_nets <int>\n"
-                    "           Sets the net drawing state\n"
-                    "      * set_cpd <int>\n"
-                    "           Sets the criticla path delay drawing state\n"
-                    "      * set_routing_util <int>\n"
-                    "           Sets the routing utilization drawing state\n"
-                    "      * set_clip_routing_util <int>\n"
-                    "           Sets whether routing utilization values are\n"
-                    "           clipped to [0., 1.]. Useful when a consistent\n"
-                    "           scale is needed across images\n"
-                    "      * set_draw_block_outlines <int>\n"
-                    "           Sets whether blocks have an outline drawn around\n"
-                    "           them\n"
-                    "      * set_draw_block_text <int>\n"
-                    "           Sets whether blocks have label text drawn on them\n"
-                    "      * set_draw_block_internals <int>\n"
-                    "           Sets the level to which block internals are drawn\n"
-                    "      * set_draw_net_max_fanout <int>\n"
-                    "           Sets the maximum fanout for nets to be drawn (if\n"
-                    "           fanout is beyond this value the net will not be\n"
-                    "           drawn)\n"
-                    "      * set_congestion <int>\n"
-                    "           Sets the routing congestion drawing state\n"
-                    "      * exit <int>\n"
-                    "           Exits VPR with specified exit code\n"
-                    "\n"
-                    "   Example:\n"
-                    "     'save_graphics place.png; \\\n"
-                    "      set_nets 1; save_graphics nets1.png;\\\n"
-                    "      set_nets 2; save_graphics nets2.png; set_nets 0;\\\n"
-                    "      set_cpd 1; save_graphics cpd1.png; \\\n"
-                    "      set_cpd 3; save_graphics cpd3.png; set_cpd 0; \\\n"
-                    "      set_routing_util 5; save_graphics routing_util5.png; \\\n"
-                    "      set_routing_util 0; \\\n"
-                    "      set_congestion 1; save_graphics congestion1.png;'\n"
-                    "\n"
-                    "   The above toggles various graphics settings (e.g. drawing\n"
-                    "   nets, drawing critical path) and then saves the results to\n"
-                    "   .png files.\n"
-                    "\n"
-                    "   Note that drawing state is reset to its previous state after\n"
-                    "   these commands are invoked.\n"
-                    "\n"
-                    "   Like the interactive graphics --disp option, the --auto\n"
-                    "   option controls how often the commands specified with\n"
-                    "   this option are invoked.\n")
-            .default_value("");
+        .help(
+            "A set of semi-colon seperated graphics commands. \n"
+            "Commands must be surrounded by quotation marks (e.g. --graphics_commands \"save_graphics place.png\")\n"
+            "   Commands:\n"
+            "      * save_graphics <file>\n"
+            "           Saves graphics to the specified file (.png/.pdf/\n"
+            "           .svg). If <file> contains '{i}', it will be\n"
+            "           replaced with an integer which increments\n"
+            "           each time graphics is invoked.\n"
+            "      * set_macros <int>\n"
+            "           Sets the placement macro drawing state\n"
+            "      * set_nets <int>\n"
+            "           Sets the net drawing state\n"
+            "      * set_cpd <int>\n"
+            "           Sets the criticla path delay drawing state\n"
+            "      * set_routing_util <int>\n"
+            "           Sets the routing utilization drawing state\n"
+            "      * set_clip_routing_util <int>\n"
+            "           Sets whether routing utilization values are\n"
+            "           clipped to [0., 1.]. Useful when a consistent\n"
+            "           scale is needed across images\n"
+            "      * set_draw_block_outlines <int>\n"
+            "           Sets whether blocks have an outline drawn around\n"
+            "           them\n"
+            "      * set_draw_block_text <int>\n"
+            "           Sets whether blocks have label text drawn on them\n"
+            "      * set_draw_block_internals <int>\n"
+            "           Sets the level to which block internals are drawn\n"
+            "      * set_draw_net_max_fanout <int>\n"
+            "           Sets the maximum fanout for nets to be drawn (if\n"
+            "           fanout is beyond this value the net will not be\n"
+            "           drawn)\n"
+            "      * set_congestion <int>\n"
+            "           Sets the routing congestion drawing state\n"
+            "      * exit <int>\n"
+            "           Exits VPR with specified exit code\n"
+            "\n"
+            "   Example:\n"
+            "     'save_graphics place.png; \\\n"
+            "      set_nets 1; save_graphics nets1.png;\\\n"
+            "      set_nets 2; save_graphics nets2.png; set_nets 0;\\\n"
+            "      set_cpd 1; save_graphics cpd1.png; \\\n"
+            "      set_cpd 3; save_graphics cpd3.png; set_cpd 0; \\\n"
+            "      set_routing_util 5; save_graphics routing_util5.png; \\\n"
+            "      set_routing_util 0; \\\n"
+            "      set_congestion 1; save_graphics congestion1.png;'\n"
+            "\n"
+            "   The above toggles various graphics settings (e.g. drawing\n"
+            "   nets, drawing critical path) and then saves the results to\n"
+            "   .png files.\n"
+            "\n"
+            "   Note that drawing state is reset to its previous state after\n"
+            "   these commands are invoked.\n"
+            "\n"
+            "   Like the interactive graphics --disp option, the --auto\n"
+            "   option controls how often the commands specified with\n"
+            "   this option are invoked.\n")
+        .default_value("");
 
     auto& gen_grp = parser.add_argument_group("general options");
 
     gen_grp.add_argument(args.show_help, "--help", "-h")
-            .help("Show this help message then exit")
-            .action(argparse::Action::HELP);
+        .help("Show this help message then exit")
+        .action(argparse::Action::HELP);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.show_version, "--version")
-            .help("Show version information then exit")
-            .action(argparse::Action::VERSION);
+        .help("Show version information then exit")
+        .action(argparse::Action::VERSION);
 
     gen_grp.add_argument<std::string>(args.device_layout, "--device")
-            .help(
-                    "Controls which device layout/floorplan is used from the architecture file."
-                    " 'auto' uses the smallest device which satisfies the circuit's resource requirements.")
-            .metavar("DEVICE_NAME")
-            .default_value("auto");
+        .help(
+            "Controls which device layout/floorplan is used from the architecture file."
+            " 'auto' uses the smallest device which satisfies the circuit's resource requirements.")
+        .metavar("DEVICE_NAME")
+        .default_value("auto");
 
     gen_grp.add_argument<size_t>(args.num_workers, "--num_workers", "-j")
-            .help(
-                    "Controls how many parallel workers VPR may use:\n"
-                    " *  1 implies VPR will execute serially,\n"
-                    " * >1 implies VPR may execute in parallel with up to the\n"
-                    "      specified concurrency, and\n"
-                    " *  0 implies VPR may execute in parallel with up to the\n"
-                    "      maximum concurrency supported by the host machine.\n"
-                    "If this option is not specified it may be set from the 'VPR_NUM_WORKERS' "
-                    "environment variable; otherwise the default is used.")
-            .default_value("1");
+        .help(
+            "Controls how many parallel workers VPR may use:\n"
+            " *  1 implies VPR will execute serially,\n"
+            " * >1 implies VPR may execute in parallel with up to the\n"
+            "      specified concurrency, and\n"
+            " *  0 implies VPR may execute in parallel with up to the\n"
+            "      maximum concurrency supported by the host machine.\n"
+            "If this option is not specified it may be set from the 'VPR_NUM_WORKERS' "
+            "environment variable; otherwise the default is used.")
+        .default_value("1");
 
     gen_grp.add_argument<bool, ParseOnOff>(args.timing_analysis, "--timing_analysis")
-            .help("Controls whether timing analysis (and timing driven optimizations) are enabled.")
-            .default_value("on");
+        .help("Controls whether timing analysis (and timing driven optimizations) are enabled.")
+        .default_value("on");
 
     gen_grp.add_argument<e_timing_update_type, ParseTimingUpdateType>(args.timing_update_type, "--timing_update_type")
-            .help(
-                    "Controls how timing analysis updates are performed:\n"
-                    " * auto: VPR decides\n"
-                    " * full: Full timing updates are performed (may be faster \n"
-                    "         if circuit timing has changed significantly)\n"
-                    " * incr: Incremental timing updates are performed (may be \n"
-                    "         faster in the face of smaller circuit timing changes)\n")
-            .default_value("auto")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how timing analysis updates are performed:\n"
+            " * auto: VPR decides\n"
+            " * full: Full timing updates are performed (may be faster \n"
+            "         if circuit timing has changed significantly)\n"
+            " * incr: Incremental timing updates are performed (may be \n"
+            "         faster in the face of smaller circuit timing changes)\n")
+        .default_value("auto")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.CreateEchoFile, "--echo_file")
-            .help(
-                    "Generate echo files of key internal data structures."
-                    " Useful for debugging VPR, and typically end in .echo")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Generate echo files of key internal data structures."
+            " Useful for debugging VPR, and typically end in .echo")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.verify_file_digests, "--verify_file_digests")
-            .help(
-                    "Verify that files loaded by VPR (e.g. architecture, netlist,"
-                    " previous packing/placement/routing) are consistent")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Verify that files loaded by VPR (e.g. architecture, netlist,"
+            " previous packing/placement/routing) are consistent")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument(args.target_device_utilization, "--target_utilization")
-            .help(
-                    "Sets the target device utilization."
-                    " This corresponds to the maximum target fraction of device grid-tiles to be used."
-                    " A value of 1.0 means the smallest device (which fits the circuit) will be used.")
-            .default_value("1.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Sets the target device utilization."
+            " This corresponds to the maximum target fraction of device grid-tiles to be used."
+            " A value of 1.0 means the smallest device (which fits the circuit) will be used.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<e_constant_net_method, ParseConstantNetMethod>(args.constant_net_method,
                                                                         "--constant_net_method")
-            .help(
-                    "Specifies how constant nets (i.e. those driven to a constant\n"
-                    "value) are handled:\n"
-                    " * global: Treat constant nets as globals (not routed)\n"
-                    " * route : Treat constant nets as normal nets (routed)\n")
-            .default_value("global")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Specifies how constant nets (i.e. those driven to a constant\n"
+            "value) are handled:\n"
+            " * global: Treat constant nets as globals (not routed)\n"
+            " * route : Treat constant nets as normal nets (routed)\n")
+        .default_value("global")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<e_clock_modeling, ParseClockModeling>(args.clock_modeling, "--clock_modeling")
-            .help(
-                    "Specifies how clock nets are handled\n"
-                    " * ideal: Treat clock pins as ideal\n"
-                    "          (i.e. no routing delays on clocks)\n"
-                    " * route: Treat the clock pins as normal nets\n"
-                    "          (i.e. routed using inter-block routing)\n"
-                    " * dedicated_network : Build a dedicated clock network based on the\n"
-                    "                       clock network specified in the architecture file\n")
-            .default_value("ideal")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Specifies how clock nets are handled\n"
+            " * ideal: Treat clock pins as ideal\n"
+            "          (i.e. no routing delays on clocks)\n"
+            " * route: Treat the clock pins as normal nets\n"
+            "          (i.e. routed using inter-block routing)\n"
+            " * dedicated_network : Build a dedicated clock network based on the\n"
+            "                       clock network specified in the architecture file\n")
+        .default_value("ideal")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.two_stage_clock_routing, "--two_stage_clock_routing")
-            .help(
-                    "Routes clock nets in two stages if using a dedicated clock network.\n"
-                    " * First stage: From the Net source to a dedicated clock network source\n"
-                    " * Second stage: From the clock network source to net sinks\n")
-            .default_value("off")
-            .action(argparse::Action::STORE_TRUE)
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Routes clock nets in two stages if using a dedicated clock network.\n"
+            " * First stage: From the Net source to a dedicated clock network source\n"
+            " * Second stage: From the clock network source to net sinks\n")
+        .default_value("off")
+        .action(argparse::Action::STORE_TRUE)
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.exit_before_pack, "--exit_before_pack")
-            .help("Causes VPR to exit before packing starts (useful for statistics collection)")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Causes VPR to exit before packing starts (useful for statistics collection)")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.strict_checks, "--strict_checks")
-            .help(
-                    "Controls whether VPR enforces some consistency checks strictly (as errors) or treats them as warnings."
-                    " Usually these checks indicate an issue with either the targetted architecture, or consistency issues"
-                    " with VPR's internal data structures/algorithms (possibly harming optimization quality)."
-                    " In specific circumstances on specific architectures these checks may be too restrictive and can be turned off."
-                    " However exercise extreme caution when turning this option off -- be sure you completely understand why the issue"
-                    " is being flagged, and why it is OK to treat as a warning instead of an error.")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls whether VPR enforces some consistency checks strictly (as errors) or treats them as warnings."
+            " Usually these checks indicate an issue with either the targetted architecture, or consistency issues"
+            " with VPR's internal data structures/algorithms (possibly harming optimization quality)."
+            " In specific circumstances on specific architectures these checks may be too restrictive and can be turned off."
+            " However exercise extreme caution when turning this option off -- be sure you completely understand why the issue"
+            " is being flagged, and why it is OK to treat as a warning instead of an error.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<std::string>(args.disable_errors, "--disable_errors")
-            .help(
-                    "Parses a list of functions for which the errors are going to be treated as warnings.\n"
-                    "Each function in the list is delimited by `:`\n"
-                    "This option should be only used for development purposes.")
-            .default_value("");
+        .help(
+            "Parses a list of functions for which the errors are going to be treated as warnings.\n"
+            "Each function in the list is delimited by `:`\n"
+            "This option should be only used for development purposes.")
+        .default_value("");
 
     gen_grp.add_argument<std::string>(args.suppress_warnings, "--suppress_warnings")
-            .help(
-                    "Parses a list of functions for which the warnings will be suppressed on stdout.\n"
-                    "The first element of the list is the name of the output log file with the suppressed warnings.\n"
-                    "The output log file can be omitted to completely suppress warnings.\n"
-                    "The file name and the list of functions is separated by `,`. If no output log file is specified,\n"
-                    "the comma is not needed.\n"
-                    "Each function in the list is delimited by `:`\n"
-                    "This option should be only used for development purposes.")
-            .default_value("");
+        .help(
+            "Parses a list of functions for which the warnings will be suppressed on stdout.\n"
+            "The first element of the list is the name of the output log file with the suppressed warnings.\n"
+            "The output log file can be omitted to completely suppress warnings.\n"
+            "The file name and the list of functions is separated by `,`. If no output log file is specified,\n"
+            "the comma is not needed.\n"
+            "Each function in the list is delimited by `:`\n"
+            "This option should be only used for development purposes.")
+        .default_value("");
 
     gen_grp.add_argument<bool, ParseOnOff>(args.allow_dangling_combinational_nodes,
                                            "--allow_dangling_combinational_nodes")
-            .help(
-                    "Option to allow dangling combinational nodes in the timing graph.\n"
-                    "This option should normally be off, as dangling combinational nodes are unusual\n"
-                    "in the timing graph and may indicate a problem in the circuit or architecture.\n"
-                    "Unless you understand why your architecture/circuit can have valid dangling combinational nodes, this option should be off.\n"
-                    "In general this is a dev-only option and should not be turned on by the end-user.")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Option to allow dangling combinational nodes in the timing graph.\n"
+            "This option should normally be off, as dangling combinational nodes are unusual\n"
+            "in the timing graph and may indicate a problem in the circuit or architecture.\n"
+            "Unless you understand why your architecture/circuit can have valid dangling combinational nodes, this option should be off.\n"
+            "In general this is a dev-only option and should not be turned on by the end-user.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.terminate_if_timing_fails, "--terminate_if_timing_fails")
-            .help(
-                    "During final timing analysis after routing, if a negative slack anywhere is returned and this option is set, \n"
-                    "VPR_FATAL_ERROR is called and processing ends.")
-            .default_value("off");
+        .help(
+            "During final timing analysis after routing, if a negative slack anywhere is returned and this option is set, \n"
+            "VPR_FATAL_ERROR is called and processing ends.")
+        .default_value("off");
 
     auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument<e_arch_format, ParseArchFormat>(args.arch_format, "--arch_format")
-            .help(
-                    "File format for the input atom-level circuit/netlist.\n"
-                    " * vtr: Architecture expressed in the explicit VTR format"
-                    " * fpga-interchage: Architecture expressed in the FPGA Interchange schema format\n")
-            .default_value("vtr")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "File format for the input atom-level circuit/netlist.\n"
+            " * vtr: Architecture expressed in the explicit VTR format"
+            " * fpga-interchage: Architecture expressed in the FPGA Interchange schema format\n")
+        .default_value("vtr")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.CircuitFile, "--circuit_file")
-            .help("Path to technology mapped circuit")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Path to technology mapped circuit")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument<e_circuit_format, ParseCircuitFormat>(args.circuit_format, "--circuit_format")
-            .help(
-                    "File format for the input atom-level circuit/netlist.\n"
-                    " * auto: infer from file extension\n"
-                    " * blif: Strict structural BLIF format\n"
-                    " * eblif: Structural BLIF format with the extensions:\n"
-                    "           .conn  - Connection between two wires\n"
-                    "           .cname - Custom name for atom primitive\n"
-                    "           .param - Parameter on atom primitive\n"
-                    "           .attr  - Attribute on atom primitive\n"
-                    " * fpga-interchage: Logical netlist in FPGA Interchange schema format\n")
-            .default_value("auto")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "File format for the input atom-level circuit/netlist.\n"
+            " * auto: infer from file extension\n"
+            " * blif: Strict structural BLIF format\n"
+            " * eblif: Structural BLIF format with the extensions:\n"
+            "           .conn  - Connection between two wires\n"
+            "           .cname - Custom name for atom primitive\n"
+            "           .param - Parameter on atom primitive\n"
+            "           .attr  - Attribute on atom primitive\n"
+            " * fpga-interchage: Logical netlist in FPGA Interchange schema format\n")
+        .default_value("auto")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.NetFile, "--net_file")
-            .help("Path to packed netlist file")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Path to packed netlist file")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.PlaceFile, "--place_file")
-            .help("Path to placement file")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Path to placement file")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.RouteFile, "--route_file")
-            .help("Path to routing file")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Path to routing file")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.SDCFile, "--sdc_file")
-            .help("Path to timing constraints file in SDC format")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Path to timing constraints file in SDC format")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_rr_graph_file, "--read_rr_graph")
-            .help(
-                    "The routing resource graph file to load."
-                    " The loaded routing resource graph overrides any routing architecture specified in the architecture file.")
-            .metavar("RR_GRAPH_FILE")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The routing resource graph file to load."
+            " The loaded routing resource graph overrides any routing architecture specified in the architecture file.")
+        .metavar("RR_GRAPH_FILE")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_rr_graph_file, "--write_rr_graph")
-            .help("Writes the routing resource graph to the specified file")
-            .metavar("RR_GRAPH_FILE")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Writes the routing resource graph to the specified file")
+        .metavar("RR_GRAPH_FILE")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_initial_place_file, "--write_initial_place_file")
-            .help("Writes out the the placement chosen by the initial placement algorithm to the specified file")
-            .metavar("INITIAL_PLACE_FILE")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Writes out the the placement chosen by the initial placement algorithm to the specified file")
+        .metavar("INITIAL_PLACE_FILE")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_vpr_constraints_file, "--read_vpr_constraints")
-            .help("Reads the floorplanning constraints that packing and placement must respect from the specified XML file.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Reads the floorplanning constraints that packing and placement must respect from the specified XML file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_vpr_constraints_file, "--write_vpr_constraints")
-            .help("Writes out new floorplanning constraints based on current placement to the specified XML file.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Writes out new floorplanning constraints based on current placement to the specified XML file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
-            .help(
-                    "Reads the lookahead data from the specified file instead of computing it.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Reads the lookahead data from the specified file instead of computing it.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_intra_cluster_router_lookahead, "--read_intra_cluster_router_lookahead")
-            .help("Reads the intra-cluster lookahead data from the specified file.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Reads the intra-cluster lookahead data from the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_router_lookahead, "--write_router_lookahead")
-            .help("Writes the lookahead data to the specified file.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Writes the lookahead data to the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_intra_cluster_router_lookahead, "--write_intra_cluster_router_lookahead")
-            .help("Writes the intra-cluster lookahead data to the specified file.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Writes the intra-cluster lookahead data to the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_placement_delay_lookup, "--read_placement_delay_lookup")
-            .help(
-                    "Reads the placement delay lookup from the specified file instead of computing it.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Reads the placement delay lookup from the specified file instead of computing it.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_placement_delay_lookup, "--write_placement_delay_lookup")
-            .help("Writes the placement delay lookup to the specified file.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Writes the placement delay lookup to the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
-            .help("Prefix for output files")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Prefix for output files")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_block_usage, "--write_block_usage")
-            .help("Writes the cluster-level block types usage summary to the specified JSON, XML or TXT file.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Writes the cluster-level block types usage summary to the specified JSON, XML or TXT file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& netlist_grp = parser.add_argument_group("netlist options");
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.absorb_buffer_luts, "--absorb_buffer_luts")
-            .help("Controls whether LUTS programmed as buffers are absorbed by downstream logic")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls whether LUTS programmed as buffers are absorbed by downstream logic")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<e_const_gen_inference, ParseConstGenInference>(args.const_gen_inference,
                                                                             "--const_gen_inference")
-            .help(
-                    "Controls how constant generators are detected\n"
-                    " * none    : No constant generator inference is performed\n"
-                    " * comb    : Only combinational primitives are considered\n"
-                    "             for constant generator inference (always safe)\n"
-                    " * comb_seq: Both combinational and sequential primitives\n"
-                    "             are considered for constant generator inference\n"
-                    "             (usually safe)\n")
-            .default_value("comb_seq")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how constant generators are detected\n"
+            " * none    : No constant generator inference is performed\n"
+            " * comb    : Only combinational primitives are considered\n"
+            "             for constant generator inference (always safe)\n"
+            " * comb_seq: Both combinational and sequential primitives\n"
+            "             are considered for constant generator inference\n"
+            "             (usually safe)\n")
+        .default_value("comb_seq")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.sweep_dangling_primary_ios, "--sweep_dangling_primary_ios")
-            .help("Controls whether dangling primary inputs and outputs are removed from the netlist")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls whether dangling primary inputs and outputs are removed from the netlist")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.sweep_dangling_nets, "--sweep_dangling_nets")
-            .help("Controls whether dangling nets are removed from the netlist")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls whether dangling nets are removed from the netlist")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.sweep_dangling_blocks, "--sweep_dangling_blocks")
-            .help("Controls whether dangling blocks are removed from the netlist")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls whether dangling blocks are removed from the netlist")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.sweep_constant_primary_outputs, "--sweep_constant_primary_outputs")
-            .help("Controls whether primary outputs driven by constant values are removed from the netlist")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls whether primary outputs driven by constant values are removed from the netlist")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument(args.netlist_verbosity, "--netlist_verbosity")
-            .help(
-                    "Controls how much detail netlist processing produces about detected netlist"
-                    " characteristics (e.g. constant generator detection) and applied netlist"
-                    " modifications (e.g. swept netlist components)."
-                    " Larger values produce more detail.")
-            .default_value("1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how much detail netlist processing produces about detected netlist"
+            " characteristics (e.g. constant generator detection) and applied netlist"
+            " modifications (e.g. swept netlist components)."
+            " Larger values produce more detail.")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& pack_grp = parser.add_argument_group("packing options");
 
     pack_grp.add_argument<bool, ParseOnOff>(args.connection_driven_clustering, "--connection_driven_clustering")
-            .help(
-                    "Controls whether or not packing prioritizes the absorption of nets with fewer"
-                    " connections into a complex logic block over nets with more connections")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls whether or not packing prioritizes the absorption of nets with fewer"
+            " connections into a complex logic block over nets with more connections")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<e_unrelated_clustering, ParseUnrelatedClustering>(args.allow_unrelated_clustering,
                                                                             "--allow_unrelated_clustering")
-            .help(
-                    "Controls whether primitives with no attraction to a cluster can be packed into it.\n"
-                    "Turning unrelated clustering on can increase packing density (fewer blocks are used), but at the cost of worse routability.\n"
-                    " * on  : Unrelated clustering enabled\n"
-                    " * off : Unrelated clustering disabled\n"
-                    " * auto: Dynamically enabled/disabled (based on density)\n")
-            .default_value("auto")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls whether primitives with no attraction to a cluster can be packed into it.\n"
+            "Turning unrelated clustering on can increase packing density (fewer blocks are used), but at the cost of worse routability.\n"
+            " * on  : Unrelated clustering enabled\n"
+            " * off : Unrelated clustering disabled\n"
+            " * auto: Dynamically enabled/disabled (based on density)\n")
+        .default_value("auto")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.alpha_clustering, "--alpha_clustering")
-            .help(
-                    "Parameter that weights the optimization of timing vs area. 0.0 focuses solely on"
-                    " area, 1.0 solely on timing.")
-            .default_value("0.75")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Parameter that weights the optimization of timing vs area. 0.0 focuses solely on"
+            " area, 1.0 solely on timing.")
+        .default_value("0.75")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.beta_clustering, "--beta_clustering")
-            .help(
-                    "Parameter that weights the absorption of small nets vs signal sharing."
-                    " 0.0 focuses solely on sharing, 1.0 solely on small net absoprtion."
-                    " Only meaningful if --connection_driven_clustering=on")
-            .default_value("0.9")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Parameter that weights the absorption of small nets vs signal sharing."
+            " 0.0 focuses solely on sharing, 1.0 solely on small net absoprtion."
+            " Only meaningful if --connection_driven_clustering=on")
+        .default_value("0.9")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool, ParseOnOff>(args.timing_driven_clustering, "--timing_driven_clustering")
-            .help("Controls whether custering optimizes for timing")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls whether custering optimizes for timing")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<e_cluster_seed, ParseClusterSeed>(args.cluster_seed_type, "--cluster_seed_type")
-            .help(
-                    "Controls how primitives are chosen as seeds."
-                    " (Default: blend2 if timing driven, max_inputs otherwise)")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how primitives are chosen as seeds."
+            " (Default: blend2 if timing driven, max_inputs otherwise)")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool, ParseOnOff>(args.enable_clustering_pin_feasibility_filter,
                                             "--clustering_pin_feasibility_filter")
-            .help(
-                    "Controls whether the pin counting feasibility filter is used during clustering."
-                    " When enabled the clustering engine counts the number of available pins in"
-                    " groups/classes of mutually connected pins within a cluster."
-                    " These counts are used to quickly filter out candidate primitives/atoms/molecules"
-                    " for which the cluster has insufficient pins to route (without performing a full routing)."
-                    " This reduces packer run-time")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls whether the pin counting feasibility filter is used during clustering."
+            " When enabled the clustering engine counts the number of available pins in"
+            " groups/classes of mutually connected pins within a cluster."
+            " These counts are used to quickly filter out candidate primitives/atoms/molecules"
+            " for which the cluster has insufficient pins to route (without performing a full routing)."
+            " This reduces packer run-time")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<e_balance_block_type_util, ParseBalanceBlockTypeUtil>(args.balance_block_type_utilization,
                                                                                 "--balance_block_type_utilization")
-            .help(
-                    "If enabled, when a primitive can potentially be mapped to multiple block types the packer will\n"
-                    "pick the block type which (currently) has the lowest utilization.\n"
-                    " * on  : Try to balance block type utilization\n"
-                    " * off : Do not try to balance block type utilization\n"
-                    " * auto: Dynamically enabled/disabled (based on density)\n")
-            .default_value("auto")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "If enabled, when a primitive can potentially be mapped to multiple block types the packer will\n"
+            "pick the block type which (currently) has the lowest utilization.\n"
+            " * on  : Try to balance block type utilization\n"
+            " * off : Do not try to balance block type utilization\n"
+            " * auto: Dynamically enabled/disabled (based on density)\n")
+        .default_value("auto")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.target_external_pin_util, "--target_ext_pin_util")
-            .help(
-                    "Sets the external pin utilization target during clustering.\n"
-                    "Value Ranges: [1.0, 0.0]\n"
-                    "* 1.0 : The packer to pack as densely as possible (i.e. try\n"
-                    "        to use 100% of cluster external pins)\n"
-                    "* 0.0 : The packer to pack as loosely as possible (i.e. each\n"
-                    "        block will contain a single mollecule).\n"
-                    "        Values in between trade-off pin usage and\n"
-                    "        packing density.\n"
-                    "\n"
-                    "Typically packing less densely improves routability, at\n"
-                    "the cost of using more clusters. Note that these settings are\n"
-                    "only guidelines, the packer will use up to 1.0 utilization if\n"
-                    "a molecule would not otherwise pack into any cluster type.\n"
-                    "\n"
-                    "This option can take multiple specifications in several\n"
-                    "formats:\n"
-                    "* auto (i.e. 'auto'): VPR will determine the target pin\n"
-                    "                      utilizations automatically\n"
-                    "* Single Value (e.g. '0.7'): the input pin utilization for\n"
-                    "                             all block types (output pin\n"
-                    "                             utilization defaults to 1.0)\n"
-                    "* Double Value (e.g. '0.7,0.8'): the input and output pin\n"
-                    "                             utilization for all block types\n"
-                    "* Block Value (e.g. 'clb:0.7', 'clb:0.7,0.8'): the pin\n"
-                    "                             utilization for a specific\n"
-                    "                             block type\n"
-                    "These can be used in combination. For example:\n"
-                    "   '--target_ext_pin_util 0.9 clb:0.7'\n"
-                    "would set the input pin utilization of clb blocks to 0.7,\n"
-                    "and all other blocks to 0.9.\n")
-            .nargs('+')
-            .default_value({"auto"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Sets the external pin utilization target during clustering.\n"
+            "Value Ranges: [1.0, 0.0]\n"
+            "* 1.0 : The packer to pack as densely as possible (i.e. try\n"
+            "        to use 100% of cluster external pins)\n"
+            "* 0.0 : The packer to pack as loosely as possible (i.e. each\n"
+            "        block will contain a single mollecule).\n"
+            "        Values in between trade-off pin usage and\n"
+            "        packing density.\n"
+            "\n"
+            "Typically packing less densely improves routability, at\n"
+            "the cost of using more clusters. Note that these settings are\n"
+            "only guidelines, the packer will use up to 1.0 utilization if\n"
+            "a molecule would not otherwise pack into any cluster type.\n"
+            "\n"
+            "This option can take multiple specifications in several\n"
+            "formats:\n"
+            "* auto (i.e. 'auto'): VPR will determine the target pin\n"
+            "                      utilizations automatically\n"
+            "* Single Value (e.g. '0.7'): the input pin utilization for\n"
+            "                             all block types (output pin\n"
+            "                             utilization defaults to 1.0)\n"
+            "* Double Value (e.g. '0.7,0.8'): the input and output pin\n"
+            "                             utilization for all block types\n"
+            "* Block Value (e.g. 'clb:0.7', 'clb:0.7,0.8'): the pin\n"
+            "                             utilization for a specific\n"
+            "                             block type\n"
+            "These can be used in combination. For example:\n"
+            "   '--target_ext_pin_util 0.9 clb:0.7'\n"
+            "would set the input pin utilization of clb blocks to 0.7,\n"
+            "and all other blocks to 0.9.\n")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool, ParseOnOff>(args.pack_prioritize_transitive_connectivity,
                                             "--pack_prioritize_transitive_connectivity")
-            .help("Whether transitive connectivity is prioritized over high-fanout connectivity during packing")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Whether transitive connectivity is prioritized over high-fanout connectivity during packing")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.pack_high_fanout_threshold, "--pack_high_fanout_threshold")
-            .help(
-                    "Sets the high fanout threshold during clustering.\n"
-                    "\n"
-                    "Typically reducing the threshold reduces packing density\n"
-                    "and improves routability."
-                    "\n"
-                    "This option can take multiple specifications in several\n"
-                    "formats:\n"
-                    "* auto (i.e. 'auto'): VPR will determine the target pin\n"
-                    "                      utilizations automatically\n"
-                    "* Single Value (e.g. '256'): the high fanout threshold\n"
-                    "                             for all block types\n"
-                    "* Block Value (e.g. 'clb:16'): the high fanout threshold\n"
-                    "                               for a specific block type\n"
-                    "These can be used in combination. For example:\n"
-                    "   '--pack_high_fanout_threshold 256 clb:16'\n"
-                    "would set the high fanout threshold for clb blocks to 16\n"
-                    "and all other blocks to 256\n")
-            .nargs('+')
-            .default_value({"auto"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Sets the high fanout threshold during clustering.\n"
+            "\n"
+            "Typically reducing the threshold reduces packing density\n"
+            "and improves routability."
+            "\n"
+            "This option can take multiple specifications in several\n"
+            "formats:\n"
+            "* auto (i.e. 'auto'): VPR will determine the target pin\n"
+            "                      utilizations automatically\n"
+            "* Single Value (e.g. '256'): the high fanout threshold\n"
+            "                             for all block types\n"
+            "* Block Value (e.g. 'clb:16'): the high fanout threshold\n"
+            "                               for a specific block type\n"
+            "These can be used in combination. For example:\n"
+            "   '--pack_high_fanout_threshold 256 clb:16'\n"
+            "would set the high fanout threshold for clb blocks to 16\n"
+            "and all other blocks to 256\n")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.pack_transitive_fanout_threshold, "--pack_transitive_fanout_threshold")
-            .help("Packer transitive fanout threshold")
-            .default_value("4")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Packer transitive fanout threshold")
+        .default_value("4")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.pack_feasible_block_array_size, "--pack_feasible_block_array_size")
-            .help(
-                    "This value is used to determine the max size of the\n"
-                    "priority queue for candidates that pass the early filter\n"
-                    "legality test but not the more detailed routing test\n")
-            .default_value("30")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "This value is used to determine the max size of the\n"
+            "priority queue for candidates that pass the early filter\n"
+            "legality test but not the more detailed routing test\n")
+        .default_value("30")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
-            .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
-            .default_value("2")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
+        .default_value("2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool, ParseOnOff>(args.use_attraction_groups, "--use_attraction_groups")
-            .help("Whether attraction groups are used to make it easier to pack primitives in the same floorplan region together.")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Whether attraction groups are used to make it easier to pack primitives in the same floorplan region together.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.pack_num_moves, "--pack_num_moves")
-            .help(
-                    "The number of moves that can be tried in packing stage")
-            .default_value("100000")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The number of moves that can be tried in packing stage")
+        .default_value("100000")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.pack_move_type, "--pack_move_type")
-            .help(
-                    "The move type used in packing."
-                    "The available values are: randomSwap, semiDirectedSwap, semiDirectedSameTypeSwap")
-            .default_value("semiDirectedSwap")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The move type used in packing."
+            "The available values are: randomSwap, semiDirectedSwap, semiDirectedSameTypeSwap")
+        .default_value("semiDirectedSwap")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_grp = parser.add_argument_group("placement options");
 
     place_grp.add_argument(args.Seed, "--seed")
-            .help("Placement random number generator seed")
-            .default_value("1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Placement random number generator seed")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_delta_delay_algorithm, ParsePlaceDeltaDelayAlgorithm>(
-                    args.place_delta_delay_matrix_calculation_method,
-                    "--place_delta_delay_matrix_calculation_method")
-            .help(
-                    "What algorithm should be used to compute the place delta matrix.\n"
-                    "\n"
-                    " * astar : Find delta delays between OPIN's and IPIN's using\n"
-                    "           the router with the current --router_profiler_astar_fac.\n"
-                    " * dijkstra : Use Dijkstra's algorithm to find all shortest paths \n"
-                    "              from sampled OPIN's to all IPIN's.\n")
-            .default_value("astar")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+                 args.place_delta_delay_matrix_calculation_method,
+                 "--place_delta_delay_matrix_calculation_method")
+        .help(
+            "What algorithm should be used to compute the place delta matrix.\n"
+            "\n"
+            " * astar : Find delta delays between OPIN's and IPIN's using\n"
+            "           the router with the current --router_profiler_astar_fac.\n"
+            " * dijkstra : Use Dijkstra's algorithm to find all shortest paths \n"
+            "              from sampled OPIN's to all IPIN's.\n")
+        .default_value("astar")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceInnerNum, "--inner_num")
-            .help("Controls number of moves per temperature: inner_num * num_blocks ^ (4/3)")
-            .default_value("0.5")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls number of moves per temperature: inner_num * num_blocks ^ (4/3)")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_effort_scaling, ParsePlaceEfforScaling>(args.place_effort_scaling,
                                                                            "--place_effort_scaling")
-            .help(
-                    "Controls how the number of placer moves level scales with circuit\n"
-                    " and device size:\n"
-                    "  * circuit: proportional to circuit size (num_blocks ^ 4/3)\n"
-                    "  * device_circuit: proportional to device and circuit size\n"
-                    "                    (grid_size ^ 2/3 * num_blocks ^ 2/3)\n")
-            .default_value("circuit")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how the number of placer moves level scales with circuit\n"
+            " and device size:\n"
+            "  * circuit: proportional to circuit size (num_blocks ^ 4/3)\n"
+            "  * device_circuit: proportional to device and circuit size\n"
+            "                    (grid_size ^ 2/3 * num_blocks ^ 2/3)\n")
+        .default_value("circuit")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceInitT, "--init_t")
-            .help("Initial temperature for manual annealing schedule")
-            .default_value("100.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Initial temperature for manual annealing schedule")
+        .default_value("100.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceExitT, "--exit_t")
-            .help("Temperature at which annealing which terminate for manual annealing schedule")
-            .default_value("0.01")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Temperature at which annealing which terminate for manual annealing schedule")
+        .default_value("0.01")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceAlphaT, "--alpha_t")
-            .help(
-                    "Temperature scaling factor for manual annealing schedule."
-                    " Old temperature is multiplied by alpha_t")
-            .default_value("0.8")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Temperature scaling factor for manual annealing schedule."
+            " Old temperature is multiplied by alpha_t")
+        .default_value("0.8")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceAlphaMin, "--alpha_min")
-            .help(
-                    "For placement using Dusty's annealing schedule. Minimum (starting) value of alpha.")
-            .default_value("0.2")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "For placement using Dusty's annealing schedule. Minimum (starting) value of alpha.")
+        .default_value("0.2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceAlphaMax, "--alpha_max")
-            .help(
-                    "For placement using Dusty's annealing schedule. Maximum (stopping) value of alpha.")
-            .default_value("0.9")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "For placement using Dusty's annealing schedule. Maximum (stopping) value of alpha.")
+        .default_value("0.9")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceAlphaDecay, "--alpha_decay")
-            .help(
-                    "For placement using Dusty's annealing schedule. The value that alpha is scaled by after reset.")
-            .default_value("0.7")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "For placement using Dusty's annealing schedule. The value that alpha is scaled by after reset.")
+        .default_value("0.7")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceSuccessMin, "--anneal_success_min")
-            .help(
-                    "For placement using Dusty's annealing schedule. Minimum success ratio when annealing before resetting the temperature to maintain the target success ratio.")
-            .default_value("0.1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "For placement using Dusty's annealing schedule. Minimum success ratio when annealing before resetting the temperature to maintain the target success ratio.")
+        .default_value("0.1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceSuccessTarget, "--anneal_success_target")
-            .help(
-                    "For placement using Dusty's annealing schedule. Target success ratio when annealing.")
-            .default_value("0.25")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "For placement using Dusty's annealing schedule. Target success ratio when annealing.")
+        .default_value("0.25")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_pad_loc_type, ParseFixPins>(args.pad_loc_type, "--fix_pins")
-            .help(
-                    "Fixes I/O pad locations randomly during placement. Valid options:\n"
-                    " * 'free' allows placement to optimize pad locations\n"
-                    " * 'random' fixes pad locations to arbitrary locations\n.")
-            .default_value("free")
-            .choices({"free", "random"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Fixes I/O pad locations randomly during placement. Valid options:\n"
+            " * 'free' allows placement to optimize pad locations\n"
+            " * 'random' fixes pad locations to arbitrary locations\n.")
+        .default_value("free")
+        .choices({"free", "random"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.constraints_file, "--fix_clusters")
-            .help(
-                    "Fixes block locations during placement. Valid options:\n"
-                    " * path to a file specifying block locations (.place format with block locations specified).")
-            .default_value("")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Fixes block locations during placement. Valid options:\n"
+            " * path to a file specifying block locations (.place format with block locations specified).")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
-            .help(
-                    "Controls which placement algorithm is used. Valid options:\n"
-                    " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
-                    " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
-                    " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
-            .default_value("criticality_timing")
-            .choices({"bounding_box", "criticality_timing", "slack_timing"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls which placement algorithm is used. Valid options:\n"
+            " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
+            " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
+        .default_value("criticality_timing")
+        .choices({"bounding_box", "criticality_timing", "slack_timing"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceQuenchAlgorithm,
                                                                    "--place_quench_algorithm")
-            .help(
-                    "Controls which placement algorithm is used during placement quench.\n"
-                    "If specified, it overrides the option --place_algorithm during placement quench.\n"
-                    "Valid options:\n"
-                    " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
-                    " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
-                    " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
-            .default_value("criticality_timing")
-            .choices({"bounding_box", "criticality_timing", "slack_timing"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls which placement algorithm is used during placement quench.\n"
+            "If specified, it overrides the option --place_algorithm during placement quench.\n"
+            "Valid options:\n"
+            " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
+            " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
+        .default_value("criticality_timing")
+        .choices({"bounding_box", "criticality_timing", "slack_timing"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceChanWidth, "--place_chan_width")
-            .help(
-                    "Sets the assumed channel width during placement. "
-                    "If --place_chan_width is unspecified, but --route_chan_width is specified the "
-                    "--route_chan_width value will be used (otherwise the default value is used).")
-            .default_value("100")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Sets the assumed channel width during placement. "
+            "If --place_chan_width is unspecified, but --route_chan_width is specified the "
+            "--route_chan_width value will be used (otherwise the default value is used).")
+        .default_value("100")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_rlim_escape_fraction, "--place_rlim_escape")
-            .help(
-                    "The fraction of moves which are allowed to ignore the region limit."
-                    " For example, a value of 0.1 means 10%% of moves are allowed to ignore the region limit.")
-            .default_value("0.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The fraction of moves which are allowed to ignore the region limit."
+            " For example, a value of 0.1 means 10%% of moves are allowed to ignore the region limit.")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_move_stats_file, "--place_move_stats")
-            .help(
-                    "File to write detailed placer move statistics to")
-            .default_value("")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "File to write detailed placer move statistics to")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.placement_saves_per_temperature, "--save_placement_per_temperature")
-            .help(
-                    "Controls how often VPR saves the current placement to a file per temperature (may be helpful for debugging)."
-                    " The value specifies how many times the placement should be saved (values less than 1 disable this feature).")
-            .default_value("0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how often VPR saves the current placement to a file per temperature (may be helpful for debugging)."
+            " The value specifies how many times the placement should be saved (values less than 1 disable this feature).")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.enable_analytic_placer, "--enable_analytic_placer")
-            .help(
-                    "Enables the analytic placer. "
-                    "Once analytic placement is done, the result is passed through the quench phase of the annealing placer for local improvement")
-            .default_value("false")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Enables the analytic placer. "
+            "Once analytic placement is done, the result is passed through the quench phase of the annealing placer for local improvement")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
-            .help(
-                    "The percentage probabilities of different moves in Simulated Annealing placement. "
-                    "For non-timing-driven placement, only the first 3 probabilities should be provided. "
-                    "For timing-driven placement, all probabilities should be provided. "
-                    "When the number of provided probabilities is less then the number of move types, zero probability "
-                    "is assumed."
-                    "The numbers listed are interpreted as the percentage probabilities of {UniformMove, MedianMove, CentroidMove, "
-                    "WeightedCentroid, WeightedMedian, Critical UniformMove, Timing feasible Region(TFR)}, in that order.")
-            .nargs('+')
-            .default_value({"100"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
-
+        .help(
+            "The percentage probabilities of different moves in Simulated Annealing placement. "
+            "For non-timing-driven placement, only the first 3 probabilities should be provided. "
+            "For timing-driven placement, all probabilities should be provided. "
+            "When the number of provided probabilities is less then the number of move types, zero probability "
+            "is assumed."
+            "The numbers listed are interpreted as the percentage probabilities of {UniformMove, MedianMove, CentroidMove, "
+            "WeightedCentroid, WeightedMedian, Critical UniformMove, Timing feasible Region(TFR)}, in that order.")
+        .nargs('+')
+        .default_value({"100"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
-            .help(
-                    "Sets the assumed high fanout net during placement. "
-                    "Any net with higher fanout would be ignored while calculating some of the directed moves: Median and WeightedMedian")
-            .default_value("10")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Sets the assumed high fanout net during placement. "
+            "Any net with higher fanout would be ignored while calculating some of the directed moves: Median and WeightedMedian")
+        .default_value("10")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_bounding_box_mode, ParsePlaceBoundingBox>(args.place_bounding_box_mode,
                                                                              "--place_bounding_box_mode")
-            .help(
-                    "Specifies the type of bounding box to be used in 3D architectures.\n"
-                    "\n"
-                    "MODE options:\n"
-                    "  auto_bb     : Automatically determine the appropriate bounding box based on the connections between layers.\n"
-                    "  cube_bb            : Use 3D bounding boxes.\n"
-                    "  per_layer_bb     : Use per-layer bounding boxes.\n"
-                    "\n"
-                    "Choose one of the available modes to define the behavior of bounding boxes in your 3D architecture. The default mode is 'automatic'.")
-            .default_value("auto_bb")
-            .choices({"auto_bb", "cube_bb", "per_layer_bb"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Specifies the type of bounding box to be used in 3D architectures.\n"
+            "\n"
+            "MODE options:\n"
+            "  auto_bb     : Automatically determine the appropriate bounding box based on the connections between layers.\n"
+            "  cube_bb            : Use 3D bounding boxes.\n"
+            "  per_layer_bb     : Use per-layer bounding boxes.\n"
+            "\n"
+            "Choose one of the available modes to define the behavior of bounding boxes in your 3D architecture. The default mode is 'automatic'.")
+        .default_value("auto_bb")
+        .choices({"auto_bb", "cube_bb", "per_layer_bb"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.RL_agent_placement, "--RL_agent_placement")
-            .help(
-                    "Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement."
-                    "It activates the RL agent placement instead of using fixed probability for each move type.")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement."
+            "It activates the RL agent placement instead of using fixed probability for each move type.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_agent_multistate, "--place_agent_multistate")
-            .help(
-                    "Enable multistate agent. "
-                    "A second state will be activated late in the annealing and in the Quench that includes all the timing driven directed moves.")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Enable multistate agent. "
+            "A second state will be activated late in the annealing and in the Quench that includes all the timing driven directed moves.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_checkpointing, "--place_checkpointing")
-            .help(
-                    "Enable Placement checkpoints. This means saving the placement and restore it if it's better than later placements."
-                    "Only effective if agnet's 2nd state is activated.")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Enable Placement checkpoints. This means saving the placement and restore it if it's better than later placements."
+            "Only effective if agnet's 2nd state is activated.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_agent_epsilon, "--place_agent_epsilon")
-            .help(
-                    "Placement RL agent's epsilon for epsilon-greedy agent."
-                    "Epsilon represents the percentage of exploration actions taken vs the exploitation ones.")
-            .default_value("0.3")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Placement RL agent's epsilon for epsilon-greedy agent."
+            "Epsilon represents the percentage of exploration actions taken vs the exploitation ones.")
+        .default_value("0.3")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_agent_gamma, "--place_agent_gamma")
-            .help(
-                    "Controls how quickly the agent's memory decays. "
-                    "Values between [0., 1.] specify the fraction of weight in the exponentially weighted reward average applied to moves which occured greater than moves_per_temp moves ago."
-                    "Values < 0 cause the unweighted reward sample average to be used (all samples are weighted equally)")
-            .default_value("0.05")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how quickly the agent's memory decays. "
+            "Values between [0., 1.] specify the fraction of weight in the exponentially weighted reward average applied to moves which occured greater than moves_per_temp moves ago."
+            "Values < 0 cause the unweighted reward sample average to be used (all samples are weighted equally)")
+        .default_value("0.05")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_dm_rlim, "--place_dm_rlim")
-            .help(
-                    "The maximum range limit of any directed move other than the uniform move. "
-                    "It also shrinks with the default rlim")
-            .default_value("3.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The maximum range limit of any directed move other than the uniform move. "
+            "It also shrinks with the default rlim")
+        .default_value("3.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_reward_fun, "--place_reward_fun")
-            .help(
-                    "The reward function used by placement RL agent."
-                    "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware"
-                    "The latter two are only available for timing-driven placement.")
-            .default_value("WLbiased_runtime_aware")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The reward function used by placement RL agent."
+            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware"
+            "The latter two are only available for timing-driven placement.")
+        .default_value("WLbiased_runtime_aware")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_crit_limit, "--place_crit_limit")
-            .help(
-                    "The criticality limit to count a block as a critical one (or have a critical connection). "
-                    "It used in some directed moves that only move critical blocks like critical uniform and feasible region. "
-                    "Its range equals to [0., 1.].")
-            .default_value("0.7")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The criticality limit to count a block as a critical one (or have a critical connection). "
+            "It used in some directed moves that only move critical blocks like critical uniform and feasible region. "
+            "Its range equals to [0., 1.].")
+        .default_value("0.7")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_constraint_expand, "--place_constraint_expand")
-            .help(
-                    "The value used to decide how much to expand the floorplan constraint region when writing"
-                    "a floorplan constraint XML file. Takes in an integer value from zero to infinity."
-                    "If the value is zero, the block stays at the same x, y location. If it is"
-                    "greater than zero the constraint region expands by the specified value in each direction."
-                    "For example, if 1 was specified, a block at the x, y location (1, 1) would have a constraint region"
-                    "of 2x2 centered around (1, 1), from (0, 0) to (2, 2).")
-            .default_value("0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The value used to decide how much to expand the floorplan constraint region when writing"
+            "a floorplan constraint XML file. Takes in an integer value from zero to infinity."
+            "If the value is zero, the block stays at the same x, y location. If it is"
+            "greater than zero the constraint region expands by the specified value in each direction."
+            "For example, if 1 was specified, a block at the x, y location (1, 1) would have a constraint region"
+            "of 2x2 centered around (1, 1), from (0, 0) to (2, 2).")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_constraint_subtile, "--place_constraint_subtile")
-            .help(
-                    "The bool used to say whether to print subtile constraints when printing a floorplan constraints XML file."
-                    "If it is off, no subtile locations are specified when printing the floorplan constraints."
-                    "If it is on, the floorplan constraints are printed with the subtiles from current placement.")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The bool used to say whether to print subtile constraints when printing a floorplan constraints XML file."
+            "If it is off, no subtile locations are specified when printing the floorplan constraints."
+            "If it is on, the floorplan constraints are printed with the subtiles from current placement.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.floorplan_num_horizontal_partitions, "--floorplan_num_horizontal_partitions")
-            .help(
-                    "An argument used for generating test constraints files. Specifies how many partitions to "
-                    "make in the horizontal dimension. Must be used in conjunction with "
-                    "--floorplan_num_vertical_partitions")
-            .default_value("0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "An argument used for generating test constraints files. Specifies how many partitions to "
+            "make in the horizontal dimension. Must be used in conjunction with "
+            "--floorplan_num_vertical_partitions")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.floorplan_num_vertical_partitions, "--floorplan_num_vertical_partitions")
-            .help(
-                    "An argument used for generating test constraints files. Specifies how many partitions to "
-                    "make in the vertical dimension. Must be used in conjunction with "
-                    "--floorplan_num_horizontal_partitions")
-            .default_value("0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "An argument used for generating test constraints files. Specifies how many partitions to "
+            "make in the vertical dimension. Must be used in conjunction with "
+            "--floorplan_num_horizontal_partitions")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     /*
      * place_grp.add_argument(args.place_timing_cost_func, "--place_timing_cost_func")
@@ -2208,750 +2207,751 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
      */
     place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm,
                                                                         "--place_agent_algorithm")
-            .help("Controls which placement RL agent is used")
-            .default_value("softmax")
-            .choices({"e_greedy", "softmax"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls which placement RL agent is used")
+        .default_value("softmax")
+        .choices({"e_greedy", "softmax"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_agent_space, ParsePlaceAgentSpace>(args.place_agent_space, "--place_agent_space")
-            .help(
-                    "Agent exploration space can be either based on only move types or also consider different block types\n"
-                    "The available values are: move_type, move_block_type")
-            .default_value("move_block_type")
-            .choices({"move_type", "move_block_type"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Agent exploration space can be either based on only move types or also consider different block types\n"
+            "The available values are: move_type, move_block_type")
+        .default_value("move_block_type")
+        .choices({"move_type", "move_block_type"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.placer_debug_block, "--placer_debug_block")
-            .help(
-                    " Controls when placer debugging is enabled for blocks.\n"
-                    " * For values >= 0, the value is taken as the block ID for\n"
-                    "   which to enable placer debug output.\n"
-                    " * For value == -1, placer debug output is enabled for\n"
-                    "   all blocks.\n"
-                    " * For values < -1, all block-based placer debug output is disabled.\n"
-                    "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
-            .default_value("-2")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            " Controls when placer debugging is enabled for blocks.\n"
+            " * For values >= 0, the value is taken as the block ID for\n"
+            "   which to enable placer debug output.\n"
+            " * For value == -1, placer debug output is enabled for\n"
+            "   all blocks.\n"
+            " * For values < -1, all block-based placer debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.placer_debug_net, "--placer_debug_net")
-            .help(
-                    "Controls when placer debugging is enabled for nets.\n"
-                    " * For values >= 0, the value is taken as the net ID for\n"
-                    "   which to enable placer debug output.\n"
-                    " * For value == -1, placer debug output is enabled for\n"
-                    "   all nets.\n"
-                    " * For values < -1, all net-based placer debug output is disabled.\n"
-                    "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
-            .default_value("-2")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls when placer debugging is enabled for nets.\n"
+            " * For values >= 0, the value is taken as the net ID for\n"
+            "   which to enable placer debug output.\n"
+            " * For value == -1, placer debug output is enabled for\n"
+            "   all nets.\n"
+            " * For values < -1, all net-based placer debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")
-            .help(
-                    "Trade-off control between delay and wirelength during placement."
-                    " 0.0 focuses completely on wirelength, 1.0 completely on timing")
-            .default_value("0.5")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Trade-off control between delay and wirelength during placement."
+            " 0.0 focuses completely on wirelength, 1.0 completely on timing")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.RecomputeCritIter, "--recompute_crit_iter")
-            .help("Controls how many temperature updates occur between timing analysis during placement")
-            .default_value("1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls how many temperature updates occur between timing analysis during placement")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.inner_loop_recompute_divider, "--inner_loop_recompute_divider")
-            .help("Controls how many timing analysies are perform per temperature during placement")
-            .default_value("0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls how many timing analysies are perform per temperature during placement")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.quench_recompute_divider, "--quench_recompute_divider")
-            .help(
-                    "Controls how many timing analysies are perform during the final placement quench (t=0)."
-                    " If unspecified, uses the value from --inner_loop_recompute_divider")
-            .default_value("0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how many timing analysies are perform during the final placement quench (t=0)."
+            " If unspecified, uses the value from --inner_loop_recompute_divider")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_exp_first, "--td_place_exp_first")
-            .help(
-                    "Controls how critical a connection is as a function of slack at the start of placement."
-                    " A value of zero treats all connections as equally critical (regardless of slack)."
-                    " Values larger than 1.0 cause low slack connections to be treated more critically."
-                    " The value increases to --td_place_exp_last during placement.")
-            .default_value("1.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how critical a connection is as a function of slack at the start of placement."
+            " A value of zero treats all connections as equally critical (regardless of slack)."
+            " Values larger than 1.0 cause low slack connections to be treated more critically."
+            " The value increases to --td_place_exp_last during placement.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_exp_last, "--td_place_exp_last")
-            .help("Controls how critical a connection is as a function of slack at the end of placement.")
-            .default_value("8.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls how critical a connection is as a function of slack at the end of placement.")
+        .default_value("8.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument<PlaceDelayModelType, ParsePlaceDelayModel>(args.place_delay_model,
                                                                              "--place_delay_model")
-            .help(
-                    "This option controls what information is considered and how"
-                    " the placement delay model is constructed.\n"
-                    "Valid options:\n"
-                    " * 'simple' uses map router lookahead\n"
-                    " * 'delta' uses differences in position only\n"
-                    " * 'delta_override' uses differences in position with overrides for direct connects\n")
-            .default_value("delta")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "This option controls what information is considered and how"
+            " the placement delay model is constructed.\n"
+            "Valid options:\n"
+            " * 'simple' uses map router lookahead\n"
+            " * 'delta' uses differences in position only\n"
+            " * 'delta_override' uses differences in position with overrides for direct connects\n")
+        .default_value("delta")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument<e_reducer, ParseReducer>(args.place_delay_model_reducer,
                                                            "--place_delay_model_reducer")
-            .help("When calculating delta delays for the placment delay model how are multiple values combined?")
-            .default_value("min")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("When calculating delta delays for the placment delay model how are multiple values combined?")
+        .default_value("min")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_delay_offset, "--place_delay_offset")
-            .help(
-                    "A constant offset (in seconds) applied to the placer's delay model.")
-            .default_value("0.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "A constant offset (in seconds) applied to the placer's delay model.")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_delay_ramp_delta_threshold, "--place_delay_ramp_delta_threshold")
-            .help(
-                    "The delta distance beyond which --place_delay_ramp is applied."
-                    " Negative values disable the placer delay ramp.")
-            .default_value("-1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The delta distance beyond which --place_delay_ramp is applied."
+            " Negative values disable the placer delay ramp.")
+        .default_value("-1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_delay_ramp_slope, "--place_delay_ramp_slope")
-            .help("The slope of the ramp (in seconds per grid tile) which is applied to the placer delay model for delta distance beyond --place_delay_ramp_delta_threshold")
-            .default_value("0.0e-9")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("The slope of the ramp (in seconds per grid tile) which is applied to the placer delay model for delta distance beyond --place_delay_ramp_delta_threshold")
+        .default_value("0.0e-9")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_tsu_rel_margin, "--place_tsu_rel_margin")
-            .help(
-                    "Specifies the scaling factor for cell setup times used by the placer."
-                    " This effectively controls whether the placer should try to achieve extra margin on setup paths."
-                    " For example a value of 1.1 corresponds to requesting 10%% setup margin.")
-            .default_value("1.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Specifies the scaling factor for cell setup times used by the placer."
+            " This effectively controls whether the placer should try to achieve extra margin on setup paths."
+            " For example a value of 1.1 corresponds to requesting 10%% setup margin.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_tsu_abs_margin, "--place_tsu_abs_margin")
-            .help(
-                    "Specifies an absolute offest added to cell setup times used by the placer."
-                    " This effectively controls whether the placer should try to achieve extra margin on setup paths."
-                    " For example a value of 500e-12 corresponds to requesting an extra 500ps of setup margin.")
-            .default_value("0.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Specifies an absolute offest added to cell setup times used by the placer."
+            " This effectively controls whether the placer should try to achieve extra margin on setup paths."
+            " For example a value of 500e-12 corresponds to requesting an extra 500ps of setup margin.")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.post_place_timing_report_file, "--post_place_timing_report")
-            .help("Name of the post-placement timing report file (not generated if unspecfied)")
-            .default_value("")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Name of the post-placement timing report file (not generated if unspecfied)")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.allowed_tiles_for_delay_model, "--allowed_tiles_for_delay_model")
-            .help(
-                    "Names of allowed tile types that can be sampled during delay "
-                    "modelling.  Default is to allow all tiles. Can be used to "
-                    "exclude specialized tiles from placer delay sampling.")
-            .default_value("")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Names of allowed tile types that can be sampled during delay "
+            "modelling.  Default is to allow all tiles. Can be used to "
+            "exclude specialized tiles from placer delay sampling.")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_grp = parser.add_argument_group("routing options");
 
     route_grp.add_argument(args.max_router_iterations, "--max_router_iterations")
-            .help(
-                    "Maximum number of Pathfinder-based routing iterations before the circuit is"
-                    " declared unroutable at a given channel width")
-            .default_value("50")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Maximum number of Pathfinder-based routing iterations before the circuit is"
+            " declared unroutable at a given channel width")
+        .default_value("50")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.first_iter_pres_fac, "--first_iter_pres_fac")
-            .help("Sets the present overuse factor for the first routing iteration")
-            .default_value("0.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Sets the present overuse factor for the first routing iteration")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.initial_pres_fac, "--initial_pres_fac")
-            .help("Sets the present overuse factor for the second routing iteration")
-            .default_value("0.5")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Sets the present overuse factor for the second routing iteration")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.pres_fac_mult, "--pres_fac_mult")
-            .help(
-                    "Sets the growth factor by which the present overuse penalty factor is"
-                    " multiplied after each routing iteration")
-            .default_value("1.3")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Sets the growth factor by which the present overuse penalty factor is"
+            " multiplied after each routing iteration")
+        .default_value("1.3")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.acc_fac, "--acc_fac")
-            .help("Specifies the accumulated overuse factor (historical congestion cost factor)")
-            .default_value("1.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Specifies the accumulated overuse factor (historical congestion cost factor)")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.bb_factor, "--bb_factor")
-            .help("Sets the distance (in channels) outside a connection's bounding box which can be explored during routing")
-            .default_value("3")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Sets the distance (in channels) outside a connection's bounding box which can be explored during routing")
+        .default_value("3")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument<e_base_cost_type, ParseBaseCost>(args.base_cost_type, "--base_cost_type")
-            .help(
-                    "Sets the basic cost of routing resource nodes:\n"
-                    " * demand_only: based on expected demand of node type\n"
-                    " * demand_only_normalized_length: based on expected \n"
-                    "      demand of node type normalized by length\n"
-                    " * delay_normalized: like demand_only but normalized\n"
-                    "      to magnitude of typical routing resource delay\n"
-                    " * delay_normalized_length: like delay_normalized but\n"
-                    "      scaled by routing resource length\n"
-                    " * delay_normalized_length_bounded: like delay_normalized but\n"
-                    "      scaled by routing resource length.  Scaling is normalized\n"
-                    "      between 1 to 4, with min lengths getting scaled at 1,\n"
-                    "      and max lengths getting scaled at 4.\n"
-                    " * delay_normalized_frequency: like delay_normalized\n"
-                    "      but scaled inversely by segment type frequency\n"
-                    " * delay_normalized_length_frequency: like delay_normalized\n"
-                    "      but scaled by routing resource length, and inversely\n"
-                    "      by segment type frequency\n"
-                    "(Default: delay_normalized_length)")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Sets the basic cost of routing resource nodes:\n"
+            " * demand_only: based on expected demand of node type\n"
+            " * demand_only_normalized_length: based on expected \n"
+            "      demand of node type normalized by length\n"
+            " * delay_normalized: like demand_only but normalized\n"
+            "      to magnitude of typical routing resource delay\n"
+            " * delay_normalized_length: like delay_normalized but\n"
+            "      scaled by routing resource length\n"
+            " * delay_normalized_length_bounded: like delay_normalized but\n"
+            "      scaled by routing resource length.  Scaling is normalized\n"
+            "      between 1 to 4, with min lengths getting scaled at 1,\n"
+            "      and max lengths getting scaled at 4.\n"
+            " * delay_normalized_frequency: like delay_normalized\n"
+            "      but scaled inversely by segment type frequency\n"
+            " * delay_normalized_length_frequency: like delay_normalized\n"
+            "      but scaled by routing resource length, and inversely\n"
+            "      by segment type frequency\n"
+            "(Default: delay_normalized_length)")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.bend_cost, "--bend_cost")
-            .help("The cost of a bend. (Default: 1.0 for global routing, 0.0 for detailed routing)")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("The cost of a bend. (Default: 1.0 for global routing, 0.0 for detailed routing)")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument<e_route_type, ParseRouteType>(args.RouteType, "--route_type")
-            .help("Specifies whether global, or combined global and detailed routing is performed.")
-            .default_value("detailed")
-            .choices({"global", "detailed"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Specifies whether global, or combined global and detailed routing is performed.")
+        .default_value("detailed")
+        .choices({"global", "detailed"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.RouteChanWidth, "--route_chan_width")
-            .help(
-                    "Specifies a fixed channel width to route at."
-                    " A value of -1 indicates that the minimum channel width should be determined")
-            .default_value("-1")
-            .metavar("CHANNEL_WIDTH");
+        .help(
+            "Specifies a fixed channel width to route at."
+            " A value of -1 indicates that the minimum channel width should be determined")
+        .default_value("-1")
+        .metavar("CHANNEL_WIDTH");
 
     route_grp.add_argument(args.min_route_chan_width_hint, "--min_route_chan_width_hint")
-            .help(
-                    "Hint to the router what the minimum routable channel width is."
-                    " Good hints can speed-up determining the minimum channel width.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Hint to the router what the minimum routable channel width is."
+            " Good hints can speed-up determining the minimum channel width.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument<bool, ParseOnOff>(args.verify_binary_search, "--verify_binary_search")
-            .help(
-                    "Force the router to verify the minimum channel width by routing at"
-                    " consecutively lower channel widths until two consecutive failures are observed.")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Force the router to verify the minimum channel width by routing at"
+            " consecutively lower channel widths until two consecutive failures are observed.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument<e_router_algorithm, ParseRouterAlgorithm>(args.RouterAlgorithm, "--router_algorithm")
-            .help(
-                    "Specifies the router algorithm to use.\n"
-                    " * timing driven: focuses on routability and circuit speed [default]\n"
-                    " * parallel: timing_driven with nets in different regions of the chip routed in parallel\n"
-                    " * parallel_decomp: timing_driven with additional parallelism obtained by decomposing high-fanout nets, possibly reducing quality\n")
-            .default_value("timing_driven")
-            .choices({"parallel", "parallel_decomp", "timing_driven"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Specifies the router algorithm to use.\n"
+            " * timing driven: focuses on routability and circuit speed [default]\n"
+            " * parallel: timing_driven with nets in different regions of the chip routed in parallel\n"
+            " * parallel_decomp: timing_driven with additional parallelism obtained by decomposing high-fanout nets, possibly reducing quality\n")
+        .default_value("timing_driven")
+        .choices({"parallel", "parallel_decomp", "timing_driven"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.min_incremental_reroute_fanout, "--min_incremental_reroute_fanout")
-            .help("The net fanout threshold above which nets will be re-routed incrementally.")
-            .default_value("16")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("The net fanout threshold above which nets will be re-routed incrementally.")
+        .default_value("16")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument<bool, ParseOnOff>(args.exit_after_first_routing_iteration,
                                              "--exit_after_first_routing_iteration")
-            .help("Causes VPR to exit after the first routing iteration (useful for saving graphics)")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Causes VPR to exit after the first routing iteration (useful for saving graphics)")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.max_logged_overused_rr_nodes, "--max_logged_overused_rr_nodes")
-            .help("Maximum number of overused RR nodes logged each time the routing fails")
-            .default_value("20")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Maximum number of overused RR nodes logged each time the routing fails")
+        .default_value("20")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument<bool, ParseOnOff>(args.generate_rr_node_overuse_report, "--generate_rr_node_overuse_report")
-            .help("Generate detailed reports on overused rr nodes and congested nets should the routing fails")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Generate detailed reports on overused rr nodes and congested nets should the routing fails")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument<e_rr_node_reorder_algorithm, ParseNodeReorderAlgorithm>(
-                    args.reorder_rr_graph_nodes_algorithm, "--reorder_rr_graph_nodes_algorithm")
-            .help(
-                    "Specifies the node reordering algorithm to use.\n"
-                    " * none: don't reorder nodes\n"
-                    " * degree_bfs: sort by degree and then by BFS\n"
-                    " * random_shuffle: a random shuffle\n")
-            .default_value("none")
-            .choices({"none", "degree_bfs", "random_shuffle"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+                 args.reorder_rr_graph_nodes_algorithm, "--reorder_rr_graph_nodes_algorithm")
+        .help(
+            "Specifies the node reordering algorithm to use.\n"
+            " * none: don't reorder nodes\n"
+            " * degree_bfs: sort by degree and then by BFS\n"
+            " * random_shuffle: a random shuffle\n")
+        .default_value("none")
+        .choices({"none", "degree_bfs", "random_shuffle"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.reorder_rr_graph_nodes_threshold, "--reorder_rr_graph_nodes_threshold")
-            .help(
-                    "Reorder rr_graph nodes to optimize memory layout above this number of nodes.")
-            .default_value("0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Reorder rr_graph nodes to optimize memory layout above this number of nodes.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.reorder_rr_graph_nodes_seed, "--reorder_rr_graph_nodes_seed")
-            .help(
-                    "Pseudo-random number generator seed used for the random_shuffle reordering algorithm")
-            .default_value("1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Pseudo-random number generator seed used for the random_shuffle reordering algorithm")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument<bool, ParseOnOff>(args.flat_routing, "--flat_routing")
-            .help("Enable VPR's flat routing (routing the nets from the source primitive to the destination primitive)")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Enable VPR's flat routing (routing the nets from the source primitive to the destination primitive)")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.has_choking_spot, "--has_choking_spot")
-            .help(
-                    ""
-                    "Some FPGA architectures, due to the lack of full connectivity inside the cluster, may have"
-                    " a choking spot inside the cluster. Thus, if routing doesn't converge, enabling this option may"
-                    " help it.")
-            .default_value("false")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            ""
+            "Some FPGA architectures, due to the lack of full connectivity inside the cluster, may have"
+            " a choking spot inside the cluster. Thus, if routing doesn't converge, enabling this option may"
+            " help it.")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
-            .help(
-                    "Controls the directedness of the timing-driven router's exploration."
-                    " For evaluating the quality of the lookahead verifier, the default value is 0.0. In general,"
-                    " values between 1 and 2 are reasonable; higher values trade some quality for reduced run-time")
-            .default_value("0.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls the directedness of the timing-driven router's exploration."
+            " For evaluating the quality of the lookahead verifier, the default value is 0.0. In general,"
+            " values between 1 and 2 are reasonable; higher values trade some quality for reduced run-time")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_profiler_astar_fac, "--router_profiler_astar_fac")
-            .help(
-                    "Controls the directedness of the timing-driven router's exploration"
-                    " when doing router delay profiling of an architecture."
-                    " The router delay profiling step is currently used to calculate the place delay matrix lookup."
-                    " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
-            .default_value("1.2")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls the directedness of the timing-driven router's exploration"
+            " when doing router delay profiling of an architecture."
+            " The router delay profiling step is currently used to calculate the place delay matrix lookup."
+            " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
+        .default_value("1.2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.max_criticality, "--max_criticality")
-            .help(
-                    "Sets the maximum fraction of routing cost derived from delay (vs routability) for any net."
-                    " 0.0 means no attention is paid to delay, 1.0 means nets on the critical path ignore congestion")
-            .default_value("0.99")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Sets the maximum fraction of routing cost derived from delay (vs routability) for any net."
+            " 0.0 means no attention is paid to delay, 1.0 means nets on the critical path ignore congestion")
+        .default_value("0.99")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.criticality_exp, "--criticality_exp")
-            .help(
-                    "Controls the delay-routability trade-off for nets as a function of slack."
-                    " 0.0 implies all nets treated equally regardless of slack."
-                    " At large values (>> 1) only nets on the critical path will consider delay.")
-            .default_value("1.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls the delay-routability trade-off for nets as a function of slack."
+            " 0.0 implies all nets treated equally regardless of slack."
+            " At large values (>> 1) only nets on the critical path will consider delay.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_init_wirelength_abort_threshold,
                                   "--router_init_wirelength_abort_threshold")
-            .help(
-                    "The first routing iteration wirelength abort threshold."
-                    " If the first routing iteration uses more than this fraction of available wirelength routing is aborted.")
-            .default_value("0.85")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "The first routing iteration wirelength abort threshold."
+            " If the first routing iteration uses more than this fraction of available wirelength routing is aborted.")
+        .default_value("0.85")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_incr_reroute_delay_ripup, ParseIncrRerouteDelayRipup>(args.incr_reroute_delay_ripup,
                                                                                           "--incremental_reroute_delay_ripup")
-            .help("Controls whether incremental net routing will rip-up (and re-route) a critical connection for delay, even if the routing is legal.")
-            .default_value("auto")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls whether incremental net routing will rip-up (and re-route) a critical connection for delay, even if the routing is legal.")
+        .default_value("auto")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_routing_failure_predictor, ParseRoutePredictor>(args.routing_failure_predictor,
                                                                                     "--routing_failure_predictor")
-            .help(
-                    "Controls how aggressively the router will predict a routing as unsuccessful"
-                    " and give up early. This can significantly reducing the run-time required"
-                    " to find the minimum channel width.\n"
-                    " * safe: Only abort when it is extremely unlikely a routing will succeed\n"
-                    " * aggressive: Further reduce run-time by giving up earlier. This may increase the reported minimum channel width\n"
-                    " * off: Only abort when the maximum number of iterations is reached\n")
-            .default_value("safe")
-            .choices({"safe", "aggressive", "off"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how aggressively the router will predict a routing as unsuccessful"
+            " and give up early. This can significantly reducing the run-time required"
+            " to find the minimum channel width.\n"
+            " * safe: Only abort when it is extremely unlikely a routing will succeed\n"
+            " * aggressive: Further reduce run-time by giving up earlier. This may increase the reported minimum channel width\n"
+            " * off: Only abort when the maximum number of iterations is reached\n")
+        .default_value("safe")
+        .choices({"safe", "aggressive", "off"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_routing_budgets_algorithm, RouteBudgetsAlgorithm>(args.routing_budgets_algorithm,
                                                                                       "--routing_budgets_algorithm")
-            .help(
-                    "Controls how the routing budgets are created and applied.\n"
-                    " * yoyo: Allocates budgets using minimax algorithm, and enables hold slack resolution in the router using the RCV algorithm. [EXPERIMENTAL]\n"
-                    " * minimax: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
-                    " * scale_delay: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
-                    " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
-            .default_value("disable")
-            .choices({"minimax", "scale_delay", "yoyo", "disable"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how the routing budgets are created and applied.\n"
+            " * yoyo: Allocates budgets using minimax algorithm, and enables hold slack resolution in the router using the RCV algorithm. [EXPERIMENTAL]\n"
+            " * minimax: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
+            " * scale_delay: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
+            " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
+        .default_value("disable")
+        .choices({"minimax", "scale_delay", "yoyo", "disable"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.save_routing_per_iteration, "--save_routing_per_iteration")
-            .help(
-                    "Controls whether VPR saves the current routing to a file after each routing iteration."
-                    " May be helpful for debugging.")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls whether VPR saves the current routing to a file after each routing iteration."
+            " May be helpful for debugging.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<float>(args.congested_routing_iteration_threshold_frac,
                                          "--congested_routing_iteration_threshold")
-            .help(
-                    "Controls when the router enters a high effort mode to resolve lingering routing congestion."
-                    " Value is the fraction of max_router_iterations beyond which the routing is deemed congested.")
-            .default_value("1.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls when the router enters a high effort mode to resolve lingering routing congestion."
+            " Value is the fraction of max_router_iterations beyond which the routing is deemed congested.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_route_bb_update, ParseRouteBBUpdate>(args.route_bb_update, "--route_bb_update")
-            .help(
-                    "Controls how the router's net bounding boxes are updated:\n"
-                    " * static : bounding boxes are never updated\n"
-                    " * dynamic: bounding boxes are updated dynamically as routing progresses\n")
-            .default_value("dynamic")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how the router's net bounding boxes are updated:\n"
+            " * static : bounding boxes are never updated\n"
+            " * dynamic: bounding boxes are updated dynamically as routing progresses\n")
+        .default_value("dynamic")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<int>(args.router_high_fanout_threshold, "--router_high_fanout_threshold")
-            .help(
-                    "Specifies the net fanout beyond which a net is considered high fanout."
-                    " Values less than zero disable special behaviour for high fanout nets")
-            .default_value("64")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Specifies the net fanout beyond which a net is considered high fanout."
+            " Values less than zero disable special behaviour for high fanout nets")
+        .default_value("64")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<float>(args.router_high_fanout_max_slope, "--router_high_fanout_max_slope")
-            .help(
-                    "Minimum routing progress where high fanout routing is enabled."
-                    " This is a ratio of the actual congestion reduction to what is expected based in the history.\n"
-                    " 1.0 is normal progress, 0 is no progress.")
-            .default_value("0.1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Minimum routing progress where high fanout routing is enabled."
+            " This is a ratio of the actual congestion reduction to what is expected based in the history.\n"
+            " 1.0 is normal progress, 0 is no progress.")
+        .default_value("0.1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_router_lookahead, ParseRouterLookahead>(args.router_lookahead_type,
                                                                             "--router_lookahead")
-            .help(
-                    "Controls what lookahead the router uses to calculate cost of completing a connection.\n"
-                    " * classic: The classic VPR lookahead (may perform better on un-buffered routing\n"
-                    "            architectures)\n"
-                    " * map: An advanced lookahead which accounts for diverse wire type\n"
-                    " * compressed_map: The algorithm is similar to map lookahead with the exception of saprse sampling of the chip"
-                    " to reduce the run-time to build the router lookahead and also its memory footprint\n"
-                    " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
-                    "                 exhaustive node sampling method\n"
-                    "\n"
-                    " The extended map differs from the map lookahead in the lookahead computation.\n"
-                    " It is better suited for architectures that have specialized routing for specific\n"
-                    " kinds of connections, but note that the time and memory necessary to compute the\n"
-                    " extended lookahead map are greater than the basic lookahead map.\n")
-            .default_value("map")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls what lookahead the router uses to calculate cost of completing a connection.\n"
+            " * classic: The classic VPR lookahead (may perform better on un-buffered routing\n"
+            "            architectures)\n"
+            " * map: An advanced lookahead which accounts for diverse wire type\n"
+            " * compressed_map: The algorithm is similar to map lookahead with the exception of saprse sampling of the chip"
+            " to reduce the run-time to build the router lookahead and also its memory footprint\n"
+            " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
+            "                 exhaustive node sampling method\n"
+            "\n"
+            " The extended map differs from the map lookahead in the lookahead computation.\n"
+            " It is better suited for architectures that have specialized routing for specific\n"
+            " kinds of connections, but note that the time and memory necessary to compute the\n"
+            " extended lookahead map are greater than the basic lookahead map.\n")
+        .default_value("map")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
-            .help(
-                    "Controls how many times the router is allowed to converge to a legal routing before halting."
-                    " If multiple legal solutions are found the best quality implementation is used.")
-            .default_value("1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how many times the router is allowed to converge to a legal routing before halting."
+            " If multiple legal solutions are found the best quality implementation is used.")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_reconvergence_cpd_threshold, "--router_reconvergence_cpd_threshold")
-            .help(
-                    "Specifies the minimum potential CPD improvement for which the router will"
-                    " continue to attempt re-convergent routing."
-                    " For example, a value of 0.99 means the router will not give up on reconvergent"
-                    " routing if it thinks a > 1% CPD reduction is possible.")
-            .default_value("0.99")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Specifies the minimum potential CPD improvement for which the router will"
+            " continue to attempt re-convergent routing."
+            " For example, a value of 0.99 means the router will not give up on reconvergent"
+            " routing if it thinks a > 1% CPD reduction is possible.")
+        .default_value("0.99")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_router_initial_timing, ParseRouterFirstIterTiming>(args.router_initial_timing,
                                                                                        "--router_initial_timing")
-            .help(
-                    "Controls how criticality is determined at the start of the first routing iteration.\n"
-                    " * all_critical: All connections are considered timing\n"
-                    "                 critical.\n"
-                    " * lookahead   : Connection criticalities are determined\n"
-                    "                 from timing analysis assuming best-case\n"
-                    "                 connection delays as estimated by the\n"
-                    "                 router's lookahead.\n"
-                    "(Default: 'lookahead' if a non-classic router lookahead is\n"
-                    "           used, otherwise 'all_critical')\n")
-            .default_value("lookahead")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how criticality is determined at the start of the first routing iteration.\n"
+            " * all_critical: All connections are considered timing\n"
+            "                 critical.\n"
+            " * lookahead   : Connection criticalities are determined\n"
+            "                 from timing analysis assuming best-case\n"
+            "                 connection delays as estimated by the\n"
+            "                 router's lookahead.\n"
+            "(Default: 'lookahead' if a non-classic router lookahead is\n"
+            "           used, otherwise 'all_critical')\n")
+        .default_value("lookahead")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.router_update_lower_bound_delays,
                                                     "--router_update_lower_bound_delays")
-            .help("Controls whether the router updates lower bound connection delays after the 1st routing iteration.")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls whether the router updates lower bound connection delays after the 1st routing iteration.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_heap_type, ParseRouterHeap>(args.router_heap, "--router_heap")
-            .help(
-                    "Controls what type of heap to use for timing driven router.\n"
-                    " * binary: A binary heap is used.\n"
-                    " * bucket: A bucket heap approximation is used. The bucket heap\n"
-                    " *         is faster because it is only a heap approximation.\n"
-                    " *         Testing has shown the approximation results in\n"
-                    " *         similiar QoR with less CPU work.\n")
-            .default_value("binary")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls what type of heap to use for timing driven router.\n"
+            " * binary: A binary heap is used.\n"
+            " * bucket: A bucket heap approximation is used. The bucket heap\n"
+            " *         is faster because it is only a heap approximation.\n"
+            " *         Testing has shown the approximation results in\n"
+            " *         similiar QoR with less CPU work.\n")
+        .default_value("binary")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
-            .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
-            .default_value("")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.read_rr_edge_metadata, "--read_rr_edge_metadata")
-            .help("Read RR edge metadata from --read_rr_graph.  RR edge metadata is not used in core VPR algorithms, and is typically not read to save runtime and memory. (Default: off).")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Read RR edge metadata from --read_rr_graph.  RR edge metadata is not used in core VPR algorithms, and is typically not read to save runtime and memory. (Default: off).")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_check_route_option, ParseCheckRoute>(args.check_route, "--check_route")
-            .help(
-                    "Options to run check route in three different modes.\n"
-                    " * off    : check route is completely disabled.\n"
-                    " * quick  : runs check route with slow checks disabled.\n"
-                    " * full   : runs the full check route step.\n")
-            .default_value("full")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Options to run check route in three different modes.\n"
+            " * off    : check route is completely disabled.\n"
+            " * quick  : runs check route with slow checks disabled.\n"
+            " * full   : runs the full check route step.\n")
+        .default_value("full")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
-            .help(
-                    "Controls when router debugging is enabled for nets.\n"
-                    " * For values >= 0, the value is taken as the net ID for\n"
-                    "   which to enable router debug output.\n"
-                    " * For value == -1, router debug output is enabled for\n"
-                    "   all nets.\n"
-                    " * For values < -1, all net-based router debug output is disabled.\n"
-                    "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
-            .default_value("-2")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls when router debugging is enabled for nets.\n"
+            " * For values >= 0, the value is taken as the net ID for\n"
+            "   which to enable router debug output.\n"
+            " * For value == -1, router debug output is enabled for\n"
+            "   all nets.\n"
+            " * For values < -1, all net-based router debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_debug_sink_rr, "--router_debug_sink_rr")
-            .help(
-                    "Controls when router debugging is enabled for the specified sink RR.\n"
-                    " * For values >= 0, the value is taken as the sink RR Node ID for\n"
-                    "   which to enable router debug output.\n"
-                    " * For values < 0, sink-based router debug output is disabled.\n"
-                    "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
-            .default_value("-2")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls when router debugging is enabled for the specified sink RR.\n"
+            " * For values >= 0, the value is taken as the sink RR Node ID for\n"
+            "   which to enable router debug output.\n"
+            " * For values < 0, sink-based router debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_debug_iteration, "--router_debug_iteration")
-            .help(
-                    "Controls when router debugging is enabled for the specific router iteration.\n"
-                    " * For values >= 0, the value is taken as the iteration number for\n"
-                    "   which to enable router debug output.\n"
-                    " * For values < 0, all iteration-based router debug output is disabled.\n"
-                    "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
-            .default_value("-2")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls when router debugging is enabled for the specific router iteration.\n"
+            " * For values >= 0, the value is taken as the iteration number for\n"
+            "   which to enable router debug output.\n"
+            " * For values < 0, all iteration-based router debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.check_rr_graph, "--check_rr_graph")
-            .help("Controls whether to check the rr graph when reading from disk.")
-            .default_value("on")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls whether to check the rr graph when reading from disk.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");
 
     analysis_grp.add_argument<bool, ParseOnOff>(args.full_stats, "--full_stats")
-            .help("Print extra statistics about the circuit and it's routing (useful for wireability analysis)")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Print extra statistics about the circuit and it's routing (useful for wireability analysis)")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument<bool, ParseOnOff>(args.Generate_Post_Synthesis_Netlist, "--gen_post_synthesis_netlist")
-            .help(
-                    "Generates the post-synthesis netlist (in BLIF and Verilog) along with delay information (in SDF)."
-                    " Used for post-implementation simulation and verification")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Generates the post-synthesis netlist (in BLIF and Verilog) along with delay information (in SDF)."
+            " Used for post-implementation simulation and verification")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument<bool, ParseOnOff>(args.Generate_Post_Implementation_Merged_Netlist,
                                                 "--gen_post_implementation_merged_netlist")
-            .help(
-                    "Generates the post-implementation netlist with merged top module ports"
-                    " Used for post-implementation simulation and verification")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Generates the post-implementation netlist with merged top module ports"
+            " Used for post-implementation simulation and verification")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument(args.timing_report_npaths, "--timing_report_npaths")
-            .help("Controls how many timing paths are reported.")
-            .default_value("100")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls how many timing paths are reported.")
+        .default_value("100")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument<e_timing_report_detail, ParseTimingReportDetail>(args.timing_report_detail,
                                                                                "--timing_report_detail")
-            .help(
-                    "Controls how much detail is provided in timing reports.\n"
-                    " * netlist: Shows only netlist pins\n"
-                    " * aggregated: Like 'netlist', but also shows aggregated intra-block/inter-block delays\n"
-                    " * detailed: Like 'aggregated' but shows detailed routing instead of aggregated inter-block delays\n"
-                    " * debug: Like 'detailed' but shows additional tool internal debug information\n")
-            .default_value("netlist")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how much detail is provided in timing reports.\n"
+            " * netlist: Shows only netlist pins\n"
+            " * aggregated: Like 'netlist', but also shows aggregated intra-block/inter-block delays\n"
+            " * detailed: Like 'aggregated' but shows detailed routing instead of aggregated inter-block delays\n"
+            " * debug: Like 'detailed' but shows additional tool internal debug information\n")
+        .default_value("netlist")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument<bool, ParseOnOff>(args.timing_report_skew, "--timing_report_skew")
-            .help("Controls whether skew timing reports are generated\n")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Controls whether skew timing reports are generated\n")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument(args.echo_dot_timing_graph_node, "--echo_dot_timing_graph_node")
-            .help(
-                    "Controls how the timing graph echo file in DOT/GraphViz format is created when\n"
-                    "'--echo_file on' is set:\n"
-                    " * -1: All nodes are dumped into the DOT file\n"
-                    " * >= 0: Only the transitive fanin/fanout of the node is dumped (easier to view)\n"
-                    " * a string: Interpretted as a VPR pin name which is converted to a node id, and dumped as above\n")
-            .default_value("-1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how the timing graph echo file in DOT/GraphViz format is created when\n"
+            "'--echo_file on' is set:\n"
+            " * -1: All nodes are dumped into the DOT file\n"
+            " * >= 0: Only the transitive fanin/fanout of the node is dumped (easier to view)\n"
+            " * a string: Interpretted as a VPR pin name which is converted to a node id, and dumped as above\n")
+        .default_value("-1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument<e_post_synth_netlist_unconn_handling, ParsePostSynthNetlistUnconnInputHandling>(
                     args.post_synth_netlist_unconn_input_handling, "--post_synth_netlist_unconn_inputs")
-            .help(
-                    "Controls how unconnected input cell ports are handled in the post-synthesis netlist\n"
-                    " * unconnected: leave unconnected\n"
-                    " * nets: connect each unconnected input pin to its own separate\n"
-                    "         undriven net named: __vpr__unconn<ID>, where <ID> is index\n"
-                    "         assigned to this occurrence of unconnected port in design\n"
-                    " * gnd: tie all to ground (1'b0)\n"
-                    " * vcc: tie all to VCC (1'b1)\n")
-            .default_value("unconnected")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how unconnected input cell ports are handled in the post-synthesis netlist\n"
+            " * unconnected: leave unconnected\n"
+            " * nets: connect each unconnected input pin to its own separate\n"
+            "         undriven net named: __vpr__unconn<ID>, where <ID> is index\n"
+            "         assigned to this occurrence of unconnected port in design\n"
+            " * gnd: tie all to ground (1'b0)\n"
+            " * vcc: tie all to VCC (1'b1)\n")
+        .default_value("unconnected")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument<e_post_synth_netlist_unconn_handling, ParsePostSynthNetlistUnconnOutputHandling>(
                     args.post_synth_netlist_unconn_output_handling, "--post_synth_netlist_unconn_outputs")
-            .help(
-                    "Controls how unconnected output cell ports are handled in the post-synthesis netlist\n"
-                    " * unconnected: leave unconnected\n"
-                    " * nets: connect each unconnected input pin to its own separate\n"
-                    "         undriven net named: __vpr__unconn<ID>, where <ID> is index\n"
-                    "         assigned to this occurrence of unconnected port in design\n")
-            .default_value("unconnected")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls how unconnected output cell ports are handled in the post-synthesis netlist\n"
+            " * unconnected: leave unconnected\n"
+            " * nets: connect each unconnected input pin to its own separate\n"
+            "         undriven net named: __vpr__unconn<ID>, where <ID> is index\n"
+            "         assigned to this occurrence of unconnected port in design\n")
+        .default_value("unconnected")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument(args.write_timing_summary, "--write_timing_summary")
-            .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");
 
     power_grp.add_argument<bool, ParseOnOff>(args.do_power, "--power")
-            .help("Enable power estimation")
-            .action(argparse::Action::STORE_TRUE)
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Enable power estimation")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     power_grp.add_argument(args.CmosTechFile, "--tech_properties")
-            .help("XML file containing CMOS technology properties (see documentation).")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("XML file containing CMOS technology properties (see documentation).")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     power_grp.add_argument(args.ActFile, "--activity_file")
-            .help("Signal activities file for all nets (see documentation).")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Signal activities file for all nets (see documentation).")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& noc_grp = parser.add_argument_group("noc options");
 
     noc_grp.add_argument<bool, ParseOnOff>(args.noc, "--noc")
-            .help(
-                    "Enables a NoC-driven placer that optimizes the placement of routers on the NoC."
-                    "Also enables an option in the graphical display that can be used to display the NoC on the FPGA."
-                    "This should be on only when the FPGA device contains a NoC and the provided netlist connects to the NoC.")
-            .default_value("off")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Enables a NoC-driven placer that optimizes the placement of routers on the NoC."
+            "Also enables an option in the graphical display that can be used to display the NoC on the FPGA."
+            "This should be on only when the FPGA device contains a NoC and the provided netlist connects to the NoC.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<std::string>(args.noc_flows_file, "--noc_flows_file")
-            .help(
-                    "XML file containing the list of traffic flows within the NoC (communication between routers)."
-                    "This is required if the --noc option is turned on.")
-            .default_value("")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "XML file containing the list of traffic flows within the NoC (communication between routers)."
+            "This is required if the --noc option is turned on.")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<std::string>(args.noc_routing_algorithm, "--noc_routing_algorithm")
-            .help(
-                    "Controls the algorithm used by the NoC to route packets.\n"
-                    "* xy_routing: Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
-                    "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links."
-                    " This algorithm is not guaranteed to generate deadlock-free traffic flow routes, but can be used with any NoC topology\n"
-                    "* west_first_routing: Uses the west-first routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
-                    "* north_last_routing: Uses the north-last routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
-                    "* negative_first_routing: Uses the negative-first routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
-                    "* odd_even_routing: Uses the odd-even routing algorithm. This is recommended to be used with mesh NoC topologies.\n")
-            .default_value("bfs_routing")
-            .choices({"xy_routing", "bfs_routing", "west_first_routing", "north_last_routing", "negative_first_routing",
-                      "odd_even_routing"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls the algorithm used by the NoC to route packets.\n"
+            "* xy_routing: Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links."
+            " This algorithm is not guaranteed to generate deadlock-free traffic flow routes, but can be used with any NoC topology\n"
+            "* west_first_routing: Uses the west-first routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* north_last_routing: Uses the north-last routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* negative_first_routing: Uses the negative-first routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* odd_even_routing: Uses the odd-even routing algorithm. This is recommended to be used with mesh NoC topologies.\n")
+        .default_value("bfs_routing")
+        .choices({"xy_routing", "bfs_routing", "west_first_routing", "north_last_routing", "negative_first_routing",
+                  "odd_even_routing"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_placement_weighting, "--noc_placement_weighting")
-            .help(
-                    "Controls the importance of the NoC placement parameters relative to timing and wirelength of the design."
-                    "This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength."
-                    "A value of 1 would mean noc placement is considered equal to timing and wirelength"
-                    "A value greater than 1 would mean the placement is increasingly dominated by NoC parameters.")
-            .default_value("5.0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls the importance of the NoC placement parameters relative to timing and wirelength of the design."
+            "This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength."
+            "A value of 1 would mean noc placement is considered equal to timing and wirelength"
+            "A value greater than 1 would mean the placement is increasingly dominated by NoC parameters.")
+        .default_value("5.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_agg_bandwidth_weighting, "--noc_aggregate_bandwidth_weighting")
-            .help(
-                    "Controls the importance of minimizing the NoC aggregate bandwidth.\n"
-                    "This value can be >=0, where 0 would mean the aggregate bandwidth has no relevance to placement.\n"
-                    "Other positive numbers specify the importance of minimizing the NoC aggregate bandwidth to other NoC-related cost terms.\n"
-                    "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
-                    "only their relative ratios determine the importance of each cost term.")
-            .default_value("0.38")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls the importance of minimizing the NoC aggregate bandwidth.\n"
+            "This value can be >=0, where 0 would mean the aggregate bandwidth has no relevance to placement.\n"
+            "Other positive numbers specify the importance of minimizing the NoC aggregate bandwidth to other NoC-related cost terms.\n"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "only their relative ratios determine the importance of each cost term.")
+        .default_value("0.38")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_latency_constraints_weighting, "--noc_latency_constraints_weighting")
-            .help(
-                    "Controls the importance of meeting all the NoC traffic flow latency constraints.\n"
-                    "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement.\n"
-                    "Other positive numbers specify the importance of meeting latency constraints to other NoC-related cost terms.\n"
-                    "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
-                    "only their relative ratios determine the importance of each cost term.")
-            .default_value("0.6")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls the importance of meeting all the NoC traffic flow latency constraints.\n"
+            "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement.\n"
+            "Other positive numbers specify the importance of meeting latency constraints to other NoC-related cost terms.\n"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "only their relative ratios determine the importance of each cost term.")
+        .default_value("0.6")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_latency_weighting, "--noc_latency_weighting")
-            .help(
-                    "Controls the importance of reducing the latencies of the NoC traffic flows.\n"
-                    "This value can be >=0, where 0 would mean the latencies have no relevance to placement.\n"
-                    "Other positive numbers specify the importance of minimizing aggregate latency to other NoC-related cost terms.\n"
-                    "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
-                    "only their relative ratios determine the importance of each cost term.")
-            .default_value("0.02")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls the importance of reducing the latencies of the NoC traffic flows.\n"
+            "This value can be >=0, where 0 would mean the latencies have no relevance to placement.\n"
+            "Other positive numbers specify the importance of minimizing aggregate latency to other NoC-related cost terms.\n"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "only their relative ratios determine the importance of each cost term.")
+        .default_value("0.02")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_congestion_weighting, "--noc_congestion_weighting")
-            .help(
-                    "Controls the importance of reducing the congestion of the NoC links.\n"
-                    "This value can be >=0, where 0 would mean the congestion has no relevance to placement.\n"
-                    "Other positive numbers specify the importance of minimizing congestion to other NoC-related cost terms.\n"
-                    "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
-                    "only their relative ratios determine the importance of each cost term.")
-            .default_value("0.25")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Controls the importance of reducing the congestion of the NoC links.\n"
+            "This value can be >=0, where 0 would mean the congestion has no relevance to placement.\n"
+            "Other positive numbers specify the importance of minimizing congestion to other NoC-related cost terms.\n"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "only their relative ratios determine the importance of each cost term.")
+        .default_value("0.25")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
-            .help(
-                    "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
-                    "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
-            .default_value("0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
+            "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
-            .help(
-                    "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
-                    "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
-            .default_value("0")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
+            "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<std::string>(args.noc_placement_file_name, "--noc_placement_file_name")
-            .help(
-                    "Name of the output file that contains the NoC placement information."
-                    "The default name is 'vpr_noc_placement_output.txt'")
-            .default_value("vpr_noc_placement_output.txt")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Name of the output file that contains the NoC placement information."
+            "The default name is 'vpr_noc_placement_output.txt'")
+        .default_value("vpr_noc_placement_output.txt")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
 #ifndef NO_SERVER
     auto& server_grp = parser.add_argument_group("server options");
 
     server_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
-            .help("Run in server mode."
-                  "Accept client application connection and respond to requests.")
-            .action(argparse::Action::STORE_TRUE)
-            .default_value("off");
+        .help(
+            "Run in server mode."
+            "Accept client application connection and respond to requests.")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
 
     server_grp.add_argument<int>(args.server_port_num, "--port")
-            .help("Server port number.")
-            .default_value("60555")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Server port number.")
+        .default_value("60555")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 #endif /* NO_SERVER */
 
     return parser;
@@ -3060,9 +3060,9 @@ void set_conditional_defaults(t_options& args) {
     if (args.RL_agent_placement && (args.PlaceAlgorithm == BOUNDING_BOX_PLACE || !args.timing_analysis)) {
         if (args.place_reward_fun.value() != "basic" && args.place_reward_fun.value() != "nonPenalizing_basic") {
             VTR_LOG_WARN(
-                    "To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n"
-                    "you can specify the reward function using --place_reward_fun.\n"
-                    "Setting the placement reward function to \"basic\"\n");
+                "To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n"
+                "you can specify the reward function using --place_reward_fun.\n"
+                "Setting the placement reward function to \"basic\"\n");
             args.place_reward_fun.set("basic", Provenance::INFERRED);
         }
     }
@@ -3073,8 +3073,7 @@ void set_conditional_defaults(t_options& args) {
     }
 
     //Place chan width follows Route chan width if unspecified
-    if (args.PlaceChanWidth.provenance() != Provenance::SPECIFIED &&
-        args.RouteChanWidth.provenance() == Provenance::SPECIFIED) {
+    if (args.PlaceChanWidth.provenance() != Provenance::SPECIFIED && args.RouteChanWidth.provenance() == Provenance::SPECIFIED) {
         args.PlaceChanWidth.set(args.RouteChanWidth.value(), Provenance::INFERRED);
     }
 
@@ -3152,16 +3151,14 @@ bool verify_args(const t_options& args) {
                         args.read_rr_graph_file.argument_name().c_str());
     }
 
-    if (!args.enable_clustering_pin_feasibility_filter &&
-        (args.target_external_pin_util.provenance() == Provenance::SPECIFIED)) {
+    if (!args.enable_clustering_pin_feasibility_filter && (args.target_external_pin_util.provenance() == Provenance::SPECIFIED)) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "%s option must be enabled for %s to have any effect\n",
                         args.enable_clustering_pin_feasibility_filter.argument_name().c_str(),
                         args.target_external_pin_util.argument_name().c_str());
     }
 
-    if (args.router_initial_timing == e_router_initial_timing::LOOKAHEAD &&
-        args.router_lookahead_type == e_router_lookahead::CLASSIC) {
+    if (args.router_initial_timing == e_router_initial_timing::LOOKAHEAD && args.router_lookahead_type == e_router_lookahead::CLASSIC) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "%s option value 'lookahead' is not compatible with %s 'classic'\n",
                         args.router_initial_timing.argument_name().c_str(),

@@ -33,13 +33,11 @@ static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& s
 static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec);
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
-static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type,
-                                               util::t_routing_cost_map& routing_cost_map);
+static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
 
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
 static void
-fill_in_missing_compressed_lookahead_entries(const std::map<int, std::set<int>>& sorted_sample_loc, int segment_index,
-                                             e_rr_type chan_type);
+fill_in_missing_compressed_lookahead_entries(const std::map<int, std::set<int>>& sorted_sample_loc, int segment_index, e_rr_type chan_type);
 
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
 static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_layer_num,
@@ -58,8 +56,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
                                                                 int chan_index);
 
 static util::Cost_Entry
-get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y,
-                                         int to_layer_num);
+get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num);
 
 static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& segment_inf_vec) {
     const auto& grid = g_vpr_ctx.device().grid;
@@ -67,7 +64,7 @@ static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& s
 
     int max_seg_lenght = std::numeric_limits<int>::min();
 
-    for (const auto& segment: segment_inf_vec) {
+    for (const auto& segment : segment_inf_vec) {
         if (!segment.longline) {
             max_seg_lenght = std::max(max_seg_lenght, segment.length);
         }
@@ -140,17 +137,17 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
                                                              static_cast<unsigned long>(num_sampling_points)});
 
     int longest_seg_length = 0;
-    for (const auto& seg_inf: segment_inf_vec) {
+    for (const auto& seg_inf : segment_inf_vec) {
         longest_seg_length = std::max(longest_seg_length, seg_inf.length);
     }
 
     std::map<int, std::set<int>> sorted_sample_loc;
-    for (const auto& sample_loc: sample_locations) {
+    for (const auto& sample_loc : sample_locations) {
         sorted_sample_loc[sample_loc.first] = std::set<int>(sample_loc.second.begin(), sample_loc.second.end());
     }
     //Profile each wire segment type
     for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
-        for (const auto& segment_inf: segment_inf_vec) {
+        for (const auto& segment_inf : segment_inf_vec) {
             std::map<t_rr_type, std::vector<RRNodeId>> sample_nodes;
             std::vector<e_rr_type> chan_types;
             if (segment_inf.parallel_axis == X_AXIS)
@@ -160,7 +157,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
             else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
                 chan_types.insert(chan_types.end(), {CHANX, CHANY});
 
-            for (e_rr_type chan_type: chan_types) {
+            for (e_rr_type chan_type : chan_types) {
                 util::t_routing_cost_map routing_cost_map = util::get_routing_cost_map(longest_seg_length,
                                                                                        from_layer_num,
                                                                                        chan_type,
@@ -183,8 +180,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
     }
 }
 
-static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type,
-                                               util::t_routing_cost_map& routing_cost_map) {
+static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map) {
     int chan_index = 0;
     if (chan_type == CHANY) {
         chan_index = 1;
@@ -197,8 +193,7 @@ static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_i
         for (int ix = 0; ix < x_dim; ix++) {
             int y_dim = static_cast<int>(routing_cost_map.dim_size(2));
             for (int iy = 0; iy < y_dim; iy++) {
-                if (sample_locations.find(ix) == sample_locations.end() ||
-                    sample_locations.at(ix).find(iy) == sample_locations[ix].end()) {
+                if (sample_locations.find(ix) == sample_locations.end() || sample_locations.at(ix).find(iy) == sample_locations[ix].end()) {
                     continue;
                 }
                 util::Expansion_Cost_Entry& expansion_cost_entry = routing_cost_map[to_layer][ix][iy];
@@ -206,7 +201,7 @@ static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_i
                 VTR_ASSERT(compressed_idx != OPEN);
 
                 f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer][compressed_idx] = expansion_cost_entry.get_representative_cost_entry(
-                        util::e_representative_entry_method::SMALLEST);
+                    util::e_representative_entry_method::SMALLEST);
             }
         }
     }
@@ -228,8 +223,7 @@ static void fill_in_missing_compressed_lookahead_entries(const std::map<int, std
         for (int to_layer_num = 0; to_layer_num < device_ctx.grid.get_num_layers(); ++to_layer_num) {
             for (int ix = 0; ix < grid_width; ix++) {
                 for (int iy = 0; iy < grid_height; iy++) {
-                    if (sample_locations.find(ix) == sample_locations.end() ||
-                        sample_locations.at(ix).find(iy) == sample_locations[ix].end()) {
+                    if (sample_locations.find(ix) == sample_locations.end() || sample_locations.at(ix).find(iy) == sample_locations[ix].end()) {
                         continue;
                     }
                     int compressed_idx = compressed_loc_index_map[ix][iy];
@@ -269,16 +263,16 @@ static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_laye
     } else if (y == 0) {
         slope = 1e-12; //just a really small number
     } else {
-        slope = (float) y / (float) x;
+        slope = (float)y / (float)x;
     }
 
     int copy_x, copy_y;
     if (slope >= 1.0) {
         copy_y = y - 1;
-        copy_x = vtr::nint((float) y / slope);
+        copy_x = vtr::nint((float)y / slope);
     } else {
         copy_x = x - 1;
-        copy_y = vtr::nint((float) x * slope);
+        copy_y = vtr::nint((float)x * slope);
     }
 
     copy_y = std::max(copy_y, 0); //Clip to zero
@@ -319,9 +313,9 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
     int missing_point_idx = compressed_loc_index_map[missing_dx][missing_dy];
     VTR_ASSERT(missing_point_idx != OPEN);
     VTR_ASSERT(std::isnan(
-            f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_point_idx].delay));
+        f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_point_idx].delay));
     VTR_ASSERT(std::isnan(
-            f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_point_idx].congestion));
+        f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_point_idx].congestion));
 
     auto missing_point_compressed_iter_x = sorted_sample_loc.lower_bound(missing_dx);
     if (missing_point_compressed_iter_x->first != missing_dx) {
@@ -340,7 +334,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
     }
 
     std::array<int, 3> window = {-1, 0, 1};
-    for (int dx: window) {
+    for (int dx : window) {
         auto dist_to_begin = std::distance(sorted_sample_loc.begin(), missing_point_compressed_iter_x);
         auto dist_to_end = std::distance(missing_point_compressed_iter_x, sorted_sample_loc.end());
         if (dx >= 0) {
@@ -355,7 +349,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
         auto neighbour_sample_loc_x_pair = missing_point_compressed_iter_x;
         std::advance(neighbour_sample_loc_x_pair, dx);
         neighbour_x = neighbour_sample_loc_x_pair->first;
-        for (int dy: window) {
+        for (int dy : window) {
             const auto& sampling_column = sorted_sample_loc.at(neighbour_x);
             auto missing_point_compressed_iter_y = sampling_column.lower_bound(missing_dy);
             if ((*missing_point_compressed_iter_y) != missing_dy) {
@@ -395,8 +389,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
 }
 
 static util::Cost_Entry
-get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y,
-                                         int to_layer_num) {
+get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
     VTR_ASSERT_SAFE(rr_type == CHANX || rr_type == CHANY);
 
     int chan_index = 0;
@@ -405,20 +398,19 @@ get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int f
     }
 
     int compressed_idx = compressed_loc_index_map[delta_x][delta_y];
-    VTR_ASSERT_SAFE(from_layer_num < (int) f_compressed_wire_cost_map.dim_size(0));
-    VTR_ASSERT_SAFE(to_layer_num < (int) f_compressed_wire_cost_map.dim_size(3));
-    VTR_ASSERT_SAFE(compressed_idx < (int) f_compressed_wire_cost_map.dim_size(4));
+    VTR_ASSERT_SAFE(from_layer_num < (int)f_compressed_wire_cost_map.dim_size(0));
+    VTR_ASSERT_SAFE(to_layer_num < (int)f_compressed_wire_cost_map.dim_size(3));
+    VTR_ASSERT_SAFE(compressed_idx < (int)f_compressed_wire_cost_map.dim_size(4));
 
     return f_compressed_wire_cost_map[from_layer_num][chan_index][seg_index][to_layer_num][compressed_idx];
 }
 
 /******** Interface class member function definitions ********/
 CompressedMapLookahead::CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
-        : det_routing_arch_(det_routing_arch), is_flat_(is_flat) {}
+    : det_routing_arch_(det_routing_arch)
+    , is_flat_(is_flat) {}
 
-float
-CompressedMapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params,
-                                          float R_upstream) const {
+float CompressedMapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -471,11 +463,11 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
         auto from_ptc = rr_graph.node_ptc_num(from_node);
 
         std::tie(expected_delay_cost, expected_cong_cost) = util::get_cost_from_src_opin(
-                src_opin_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
-                delta_x,
-                delta_y,
-                to_layer_num,
-                get_wire_cost_entry_compressed_lookahead);
+            src_opin_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
+            delta_x,
+            delta_y,
+            to_layer_num,
+            get_wire_cost_entry_compressed_lookahead);
 
         expected_delay_cost *= params.criticality;
         expected_cong_cost *= (1 - params.criticality);
@@ -488,8 +480,8 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
                                                              device_ctx.rr_indexed_data,
                                                              from_node,
                                                              is_flat_)
-                                                    .c_str())
-                                    .c_str());
+                                                .c_str())
+                                .c_str());
 
     } else if (from_type == CHANX || from_type == CHANY) {
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
@@ -517,8 +509,8 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
                                                              device_ctx.rr_indexed_data,
                                                              from_node,
                                                              is_flat_)
-                                                    .c_str())
-                                    .c_str());
+                                                .c_str())
+                                .c_str());
         expected_delay_cost = cost_entry.delay * params.criticality;
         expected_cong_cost = cost_entry.congestion * (1 - params.criticality);
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
@@ -563,14 +555,14 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong_igno
         auto from_ptc = rr_graph.node_ptc_num(from_node);
 
         std::tie(expected_delay_cost, expected_cong_cost) = util::get_cost_from_src_opin(
-                src_opin_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
-                delta_x,
-                delta_y,
-                to_layer_num,
-                get_wire_cost_entry_compressed_lookahead);
+            src_opin_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
+            delta_x,
+            delta_y,
+            to_layer_num,
+            get_wire_cost_entry_compressed_lookahead);
 
-//        expected_delay_cost *= params.criticality;
-//        expected_cong_cost *= (1 - params.criticality);
+        //        expected_delay_cost *= params.criticality;
+        //        expected_cong_cost *= (1 - params.criticality);
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
@@ -580,8 +572,8 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong_igno
                                                              device_ctx.rr_indexed_data,
                                                              from_node,
                                                              is_flat_)
-                                                    .c_str())
-                                    .c_str());
+                                                .c_str())
+                                .c_str());
 
     } else if (from_type == CHANX || from_type == CHANY) {
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
@@ -609,10 +601,10 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong_igno
                                                              device_ctx.rr_indexed_data,
                                                              from_node,
                                                              is_flat_)
-                                                    .c_str())
-                                    .c_str());
-//        expected_delay_cost = cost_entry.delay * params.criticality;
-//        expected_cong_cost = cost_entry.congestion * (1 - params.criticality);
+                                                .c_str())
+                                .c_str());
+        //        expected_delay_cost = cost_entry.delay * params.criticality;
+        //        expected_cong_cost = cost_entry.congestion * (1 - params.criticality);
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */

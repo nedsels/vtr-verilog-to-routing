@@ -7,7 +7,8 @@
 #include "vpr_types.h"
 
 HeapStorage::HeapStorage()
-        : heap_free_head_(nullptr), num_heap_allocated_(0) {}
+    : heap_free_head_(nullptr)
+    , num_heap_allocated_(0) {}
 
 t_heap*
 HeapStorage::alloc() {

@@ -84,12 +84,12 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     /* Prune or rip-up existing routing for the net */
     if (should_setup) {
         setup_net(
-                itry,
-                net_id,
-                net_list,
-                connections_inf,
-                router_opts,
-                worst_negative_slack);
+            itry,
+            net_id,
+            net_list,
+            connections_inf,
+            router_opts,
+            worst_negative_slack);
     }
 
     VTR_ASSERT(route_ctx.route_trees[net_id]);
@@ -117,7 +117,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     auto remaining_targets = sink_mask_to_vector(remaining_targets_mask, num_sinks);
 
     // calculate criticality of remaining target pins
-    for (int ipin: remaining_targets) {
+    for (int ipin : remaining_targets) {
         auto pin = net_list.net_pin(net_id, ipin);
         pin_criticality[ipin] = get_net_pin_criticality(timing_info,
                                                         netlist_pin_lookup,
@@ -241,14 +241,14 @@ inline NetResultFlags route_net(ConnectionRouter& router,
                                       pin_timing_invalidator);
 
     if (router_opts.update_lower_bound_delays) {
-        for (int ipin: remaining_targets) {
+        for (int ipin : remaining_targets) {
             connections_inf.update_lower_bound_connection_delay(net_id, ipin, net_delay[ipin]);
         }
     }
 
     VTR_ASSERT_MSG(
-            g_vpr_ctx.routing().rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode),
-            "SOURCE should never be congested");
+        g_vpr_ctx.routing().rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode),
+        "SOURCE should never be congested");
     VTR_LOGV_DEBUG(f_router_debug, "Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
     router.empty_rcv_route_tree_set(); // ?
@@ -283,7 +283,8 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
 
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu pre-route to (%s)\n", size_t(net_id),
                    describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node,
-                                    is_flat).c_str());
+                                    is_flat)
+                       .c_str());
     profiling::sink_criticality_start();
 
     t_bb bounding_box = route_ctx.route_bb[net_id];
@@ -298,12 +299,12 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
                                      std::unordered_map<RRNodeId, int>());
 
     std::tie(found_path, retry_with_full_bb, cheapest) = router.timing_driven_route_connection_from_route_tree(
-            tree.root(),
-            sink_node,
-            cost_params,
-            bounding_box,
-            router_stats,
-            conn_params);
+        tree.root(),
+        sink_node,
+        cost_params,
+        bounding_box,
+        router_stats,
+        conn_params);
 
     // TODO: Parts of the rest of this function are repetitive to code in route_sink. Should refactor.
     if (!found_path) {
@@ -311,7 +312,8 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
         VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
                 net_list.block_name(src_block).c_str(),
                 describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node,
-                                 is_flat).c_str(),
+                                 is_flat)
+                    .c_str(),
                 net_list.net_name(net_id).c_str(),
                 size_t(net_id));
         if (f_router_debug) {
@@ -409,7 +411,8 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     RRNodeId sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget,
                    describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node,
-                                    is_flat).c_str());
+                                    is_flat)
+                       .c_str());
 
     router.clear_modified_rr_node_info();
 
@@ -422,30 +425,31 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
-    bool has_choking_spot = ((int) choking_spots[target_pin].size() != 0) && router_opts.has_choking_spot;
+    bool has_choking_spot = ((int)choking_spots[target_pin].size() != 0) && router_opts.has_choking_spot;
     ConnectionParameters conn_params(net_id, target_pin, has_choking_spot, choking_spots[target_pin]);
 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
-    if (high_fanout && !sink_critical && !net_is_global && !net_is_clock &&
-        -routing_predictor.get_slope() > router_opts.high_fanout_max_slope) {
+    if (high_fanout && !sink_critical && !net_is_global && !net_is_clock && -routing_predictor.get_slope() > router_opts.high_fanout_max_slope) {
         std::tie(found_path, flags.retry_with_full_bb,
-                 cheapest) = router.timing_driven_route_connection_from_route_tree_high_fanout(tree.root(),
-                                                                                               sink_node,
-                                                                                               cost_params,
-                                                                                               net_bb,
-                                                                                               spatial_rt_lookup,
-                                                                                               router_stats,
-                                                                                               conn_params);
+                 cheapest)
+            = router.timing_driven_route_connection_from_route_tree_high_fanout(tree.root(),
+                                                                                sink_node,
+                                                                                cost_params,
+                                                                                net_bb,
+                                                                                spatial_rt_lookup,
+                                                                                router_stats,
+                                                                                conn_params);
     } else {
         std::tie(found_path, flags.retry_with_full_bb,
-                 cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
-                                                                                   sink_node,
-                                                                                   cost_params,
-                                                                                   net_bb,
-                                                                                   router_stats,
-                                                                                   conn_params);
+                 cheapest)
+            = router.timing_driven_route_connection_from_route_tree(tree.root(),
+                                                                    sink_node,
+                                                                    cost_params,
+                                                                    net_bb,
+                                                                    router_stats,
+                                                                    conn_params);
     }
 
     if (!found_path) {

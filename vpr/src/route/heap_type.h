@@ -67,7 +67,7 @@ struct t_heap {
         u.prev_edge = size_t(edge);
     }
 
-private:
+  private:
     union {
         t_heap* next = nullptr;
         // The previous edge is not a StrongId for performance & brevity
@@ -80,7 +80,7 @@ private:
 // t_heap object pool, useful for implementing heaps that conform to
 // HeapInterface.
 class HeapStorage {
-public:
+  public:
     HeapStorage();
 
     // Allocate a heap item.
@@ -91,7 +91,7 @@ public:
 
     void free_all_memory();
 
-private:
+  private:
     /* For keeping track of the sudo malloc memory for the heap*/
     vtr::t_chunk heap_ch_;
 
@@ -110,7 +110,7 @@ private:
 // instance.  This ensure that no leaks are present in the users of the heap.
 // Violating this assumption may result in a assertion violation.
 class HeapInterface {
-public:
+  public:
     virtual ~HeapInterface() {}
 
     // Allocate a heap item.

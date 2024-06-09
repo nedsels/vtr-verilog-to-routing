@@ -54,8 +54,8 @@ t_route_util_options read_route_util_options(int argc, const char** argv);
  * Exit codes to signal success/failure to scripts
  * calling vpr
  */
-constexpr int SUCCESS_EXIT_CODE = 0; //Everything OK
-constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
+constexpr int SUCCESS_EXIT_CODE = 0;     //Everything OK
+constexpr int ERROR_EXIT_CODE = 1;       //Something went wrong internally
 constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
 static void do_one_route(const Netlist<>& net_list,
@@ -63,7 +63,7 @@ static void do_one_route(const Netlist<>& net_list,
                          RRNodeId source_node,
                          RRNodeId sink_node,
                          const t_router_opts& router_opts,
-                         const std::vector <t_segment_inf>& segment_inf,
+                         const std::vector<t_segment_inf>& segment_inf,
                          bool is_flat) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -94,7 +94,6 @@ static void do_one_route(const Netlist<>& net_list,
 
     route_budgets budgeting_inf(net_list, is_flat);
 
-
     RouterStats router_stats;
     auto router_lookahead = make_router_lookahead(det_routing_arch,
                                                   router_opts.lookahead_type,
@@ -104,14 +103,14 @@ static void do_one_route(const Netlist<>& net_list,
                                                   is_flat);
 
     ConnectionRouter<BinaryHeap> router(
-            device_ctx.grid,
-            *router_lookahead,
-            device_ctx.rr_graph.rr_nodes(),
-            &device_ctx.rr_graph,
-            device_ctx.rr_rc_data,
-            device_ctx.rr_graph.rr_switch(),
-            g_vpr_ctx.mutable_routing().rr_node_route_inf,
-            is_flat);
+        device_ctx.grid,
+        *router_lookahead,
+        device_ctx.rr_graph.rr_nodes(),
+        &device_ctx.rr_graph,
+        device_ctx.rr_rc_data,
+        device_ctx.rr_graph.rr_switch(),
+        g_vpr_ctx.mutable_routing().rr_node_route_inf,
+        is_flat);
     enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
     bool found_path;
     t_heap cheapest;
@@ -143,8 +142,8 @@ static void do_one_route(const Netlist<>& net_list,
         VTR_LOG("\n");
 
         VTR_ASSERT_MSG(
-                route_ctx.rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode),
-                "SOURCE should never be congested");
+            route_ctx.rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode),
+            "SOURCE should never be congested");
     } else {
         VTR_LOG("Routing failed");
     }
@@ -157,7 +156,7 @@ static void profile_source(const Netlist<>& net_list,
                            const t_det_routing_arch& det_routing_arch,
                            RRNodeId source_rr_node,
                            const t_router_opts& router_opts,
-                           const std::vector <t_segment_inf>& segment_inf,
+                           const std::vector<t_segment_inf>& segment_inf,
                            bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Profiling source");
     const auto& device_ctx = g_vpr_ctx.device();
@@ -192,7 +191,7 @@ static void profile_source(const Netlist<>& net_list,
             auto best_sink_ptcs = get_best_classes(RECEIVER,
                                                    device_ctx.grid.get_physical_type({sink_x, sink_y, layer_num}));
             bool successfully_routed;
-            for (int sink_ptc: best_sink_ptcs) {
+            for (int sink_ptc : best_sink_ptcs) {
                 VTR_ASSERT(sink_ptc != OPEN);
 
                 //TODO: should pass layer_num instead of 0 to node_lookup once the multi-die FPGAs support is completed
@@ -207,8 +206,8 @@ static void profile_source(const Netlist<>& net_list,
 
                 {
                     vtr::ScopedStartFinishTimer delay_timer(vtr::string_fmt(
-                            "Routing Src: %d Sink: %d", source_rr_node,
-                            sink_rr_node));
+                        "Routing Src: %d Sink: %d", source_rr_node,
+                        sink_rr_node));
 
                     successfully_routed = profiler.calculate_delay(RRNodeId(source_rr_node),
                                                                    RRNodeId(sink_rr_node),
@@ -281,16 +280,16 @@ t_route_util_options read_route_util_options(int argc, const char** argv) {
 
     auto& route_diag_grp = parser.add_argument_group("route diagnostic options");
     route_diag_grp.add_argument(args.sink_rr_node, "--sink_rr_node")
-            .help("Sink RR node to route for route_diag.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Sink RR node to route for route_diag.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
     route_diag_grp.add_argument(args.source_rr_node, "--source_rr_node")
-            .help("Source RR node to route for route_diag.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Source RR node to route for route_diag.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
     route_diag_grp.add_argument(args.profile_source, "--profile_source")
-            .help(
-                    "Profile routes from source to IPINs at all locations."
-                    "This is similiar to the placer delay matrix construction.")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Profile routes from source to IPINs at all locations."
+            "This is similiar to the placer delay matrix construction.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     parser.parse_args(argc, argv);
 
@@ -326,21 +325,20 @@ int main(int argc, const char** argv) {
 
         bool is_flat = vpr_setup.RouterOpts.flat_routing;
 
-        const Netlist<>& net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
-                                    (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+        const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
         t_chan_width chan_width = setup_chan_width(
-                vpr_setup.RouterOpts,
-                Arch.Chans);
+            vpr_setup.RouterOpts,
+            Arch.Chans);
 
         alloc_routing_structs(
-                chan_width,
-                vpr_setup.RouterOpts,
-                &vpr_setup.RoutingArch,
-                vpr_setup.Segments,
-                Arch.Directs,
-                Arch.num_directs,
-                is_flat);
+            chan_width,
+            vpr_setup.RouterOpts,
+            &vpr_setup.RoutingArch,
+            vpr_setup.Segments,
+            Arch.Directs,
+            Arch.num_directs,
+            is_flat);
 
         if (route_options.profile_source) {
             profile_source(net_list,

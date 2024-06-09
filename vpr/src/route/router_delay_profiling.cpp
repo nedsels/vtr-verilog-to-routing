@@ -11,15 +11,17 @@
 RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
                                          const RouterLookahead* lookahead,
                                          bool is_flat)
-        : net_list_(net_list), router_(
-        g_vpr_ctx.device().grid,
-        *lookahead,
-        g_vpr_ctx.device().rr_graph.rr_nodes(),
-        &g_vpr_ctx.device().rr_graph,
-        g_vpr_ctx.device().rr_rc_data,
-        g_vpr_ctx.device().rr_graph.rr_switch(),
-        g_vpr_ctx.mutable_routing().rr_node_route_inf,
-        is_flat), is_flat_(is_flat) {
+    : net_list_(net_list)
+    , router_(
+          g_vpr_ctx.device().grid,
+          *lookahead,
+          g_vpr_ctx.device().rr_graph.rr_nodes(),
+          &g_vpr_ctx.device().rr_graph,
+          g_vpr_ctx.device().rr_rc_data,
+          g_vpr_ctx.device().rr_graph.rr_switch(),
+          g_vpr_ctx.mutable_routing().rr_node_route_inf,
+          is_flat)
+    , is_flat_(is_flat) {
     const auto& grid = g_vpr_ctx.device().grid;
     int num_layers = grid.get_num_layers();
 
@@ -29,8 +31,7 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
                         grid.width(),
                         grid.height()});
 
-    for (int physical_tile_type_idx = 0; physical_tile_type_idx <
-                                         static_cast<int>(g_vpr_ctx.device().physical_tile_types.size()); ++physical_tile_type_idx) {
+    for (int physical_tile_type_idx = 0; physical_tile_type_idx < static_cast<int>(g_vpr_ctx.device().physical_tile_types.size()); ++physical_tile_type_idx) {
         for (int from_layer = 0; from_layer < num_layers; ++from_layer) {
             for (int to_layer = 0; to_layer < num_layers; ++to_layer) {
                 for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
@@ -109,12 +110,12 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
     std::tie(found_path, std::ignore, cheapest) = router_.timing_driven_route_connection_from_route_tree(
-            tree.root(),
-            sink_node,
-            cost_params,
-            bounding_box,
-            router_stats,
-            conn_params);
+        tree.root(),
+        sink_node,
+        cost_params,
+        bounding_box,
+        router_stats,
+        conn_params);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
@@ -129,8 +130,8 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         *net_delay = rt_node_of_sink->Tdel;
 
         VTR_ASSERT_MSG(
-                route_ctx.rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode),
-                "SOURCE should never be congested");
+            route_ctx.rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode),
+            "SOURCE should never be congested");
     }
 
     //VTR_LOG("Explored %zu of %zu (%.2f) RR nodes: path delay %g\n", router_stats.heap_pops, device_ctx.rr_nodes.size(), float(router_stats.heap_pops) / device_ctx.rr_nodes.size(), *net_delay);
@@ -143,8 +144,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     return found_path;
 }
 
-float
-RouterDelayProfiler::get_min_delay(int physical_tile_type_idx, int from_layer, int to_layer, int dx, int dy) const {
+float RouterDelayProfiler::get_min_delay(int physical_tile_type_idx, int from_layer, int to_layer, int dx, int dy) const {
     return min_delays_[physical_tile_type_idx][from_layer][to_layer][dx][dy];
 }
 
@@ -183,30 +183,30 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     VTR_ASSERT(is_flat == false);
     t_det_routing_arch det_routing_arch;
     auto router_lookahead = make_router_lookahead(det_routing_arch, e_router_lookahead::NO_OP,
-            /*write_lookahead=*/"", /*read_lookahead=*/"",
-            /*segment_inf=*/{},
+                                                  /*write_lookahead=*/"", /*read_lookahead=*/"",
+                                                  /*segment_inf=*/{},
                                                   is_flat);
 
     ConnectionRouter<BinaryHeap> router(
-            device_ctx.grid,
-            *router_lookahead,
-            device_ctx.rr_graph.rr_nodes(),
-            &g_vpr_ctx.device().rr_graph,
-            device_ctx.rr_rc_data,
-            device_ctx.rr_graph.rr_switch(),
-            route_ctx.rr_node_route_inf,
-            is_flat);
+        device_ctx.grid,
+        *router_lookahead,
+        device_ctx.rr_graph.rr_nodes(),
+        &g_vpr_ctx.device().rr_graph,
+        device_ctx.rr_rc_data,
+        device_ctx.rr_graph.rr_switch(),
+        route_ctx.rr_node_route_inf,
+        is_flat);
     RouterStats router_stats;
     ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
     vtr::vector<RRNodeId, t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(
-            tree.root(),
-            cost_params,
-            bounding_box,
-            router_stats,
-            conn_params);
+        tree.root(),
+        cost_params,
+        bounding_box,
+        router_stats,
+        conn_params);
 
     VTR_ASSERT(shortest_paths.size() == device_ctx.rr_graph.num_nodes());
-    for (int isink = 0; isink < (int) device_ctx.rr_graph.num_nodes(); ++isink) {
+    for (int isink = 0; isink < (int)device_ctx.rr_graph.num_nodes(); ++isink) {
         RRNodeId sink_rr_node(isink);
         if (RRNodeId(sink_rr_node) == src_rr_node) {
             path_delays_to[sink_rr_node] = 0.;

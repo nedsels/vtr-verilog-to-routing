@@ -180,7 +180,8 @@ struct t_ext_pin_util {
     t_ext_pin_util() = default;
 
     t_ext_pin_util(float in, float out)
-            : input_pin_util(in), output_pin_util(out) {}
+        : input_pin_util(in)
+        , output_pin_util(out) {}
 
     float input_pin_util = 1.;
     float output_pin_util = 1.;
@@ -190,7 +191,7 @@ struct t_ext_pin_util {
  * @brief Specifies the utilization of external input/output pins during packing
  */
 class t_ext_pin_util_targets {
-public:
+  public:
     t_ext_pin_util_targets() = default;
 
     t_ext_pin_util_targets(float default_in_util, float default_out_util);
@@ -205,7 +206,7 @@ public:
     ///@brief Returns a string describing input/output pin utilization targets
     std::string to_string() const;
 
-public:
+  public:
     /**
      * @brief Sets the pin util for the specified block type
      * @return true if non-default was previously set
@@ -218,13 +219,13 @@ public:
      */
     void set_default_pin_util(t_ext_pin_util target);
 
-private:
+  private:
     t_ext_pin_util defaults_;
     std::map<std::string, t_ext_pin_util, std::less<>> overrides_;
 };
 
 class t_pack_high_fanout_thresholds {
-public:
+  public:
     t_pack_high_fanout_thresholds() = default;
 
     explicit t_pack_high_fanout_thresholds(int threshold);
@@ -239,7 +240,7 @@ public:
     ///@brief Returns a string describing high fanout thresholds for different block types
     std::string to_string() const;
 
-public:
+  public:
     /**
      * @brief Sets the pin util for the specified block type
      * @return true if non-default was previously set
@@ -252,7 +253,7 @@ public:
      */
     void set_default(int threshold);
 
-private:
+  private:
     int default_;
     std::map<std::string, int, std::less<>> overrides_;
 };
@@ -283,7 +284,7 @@ typedef vtr::flat_map2<int, t_pb_route> t_pb_routes;
  * instances.
  */
 class t_pb {
-public:
+  public:
     char* name = nullptr;                     ///<Name of this physical block
     t_pb_graph_node* pb_graph_node = nullptr; ///<pointer to pb_graph_node this pb corresponds to
 
@@ -360,7 +361,7 @@ public:
      */
     void set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx);
 
-private:
+  private:
     /**
      * @brief Contains the atom netlist port bit index associated
      *        with any primitive pins which have been rotated during clustering
@@ -407,7 +408,7 @@ enum e_pack_pattern_molecule_type {
  *      next           : next molecule in the linked list
  */
 class t_pack_molecule {
-public:
+  public:
     /* general molecule info */
     bool valid;
     float base_gain;
@@ -453,7 +454,7 @@ struct t_chain_info {
  * Contains data structure of placement locations based on status of primitive
  */
 class t_cluster_placement_stats {
-public:
+  public:
     int num_pb_types;                     ///<num primitive pb_types inside complex block
     bool has_long_chain;                  ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
     const t_pack_molecule* curr_molecule; ///<current molecule being considered for packing
@@ -462,7 +463,7 @@ public:
     // Each cluster_placement_primitive is associated with and index (key of the map) for easier lookup, insertion and deletion.
     std::vector<std::unordered_map<int, t_cluster_placement_primitive*>> valid_primitives;
 
-public:
+  public:
     // Moves primitives that are inflight to the tried map
     void move_inflight_to_tried();
 
@@ -521,7 +522,7 @@ public:
      */
     void free_primitives();
 
-private:
+  private:
     std::unordered_multimap<int, t_cluster_placement_primitive*> in_flight; ///<ptrs to primitives currently being considered to pack into
     std::unordered_multimap<int, t_cluster_placement_primitive*> tried;     ///<ptrs to primitives that are already tried but current logic block unable to pack to
     std::unordered_multimap<int, t_cluster_placement_primitive*> invalid;   ///<ptrs to primitives that are invalid (already occupied by another primitive in this cluster)
@@ -606,7 +607,12 @@ struct t_bb {
     t_bb() = default;
 
     t_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_min_, int layer_max_)
-            : xmin(xmin_), xmax(xmax_), ymin(ymin_), ymax(ymax_), layer_min(layer_min_), layer_max(layer_max_) {
+        : xmin(xmin_)
+        , xmax(xmax_)
+        , ymin(ymin_)
+        , ymax(ymax_)
+        , layer_min(layer_min_)
+        , layer_max(layer_max_) {
         VTR_ASSERT(xmax_ >= xmin_);
         VTR_ASSERT(ymax_ >= ymin_);
         VTR_ASSERT(layer_max_ >= layer_min_);
@@ -628,7 +634,11 @@ struct t_2D_bb {
     t_2D_bb() = default;
 
     t_2D_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_num_)
-            : xmin(xmin_), xmax(xmax_), ymin(ymin_), ymax(ymax_), layer_num(layer_num_) {
+        : xmin(xmin_)
+        , xmax(xmax_)
+        , ymin(ymin_)
+        , ymax(ymax_)
+        , layer_num(layer_num_) {
         VTR_ASSERT(xmax_ >= xmin_);
         VTR_ASSERT(ymax_ >= ymin_);
         VTR_ASSERT(layer_num_ >= 0);
@@ -653,7 +663,10 @@ struct t_pl_offset {
     t_pl_offset() = default;
 
     t_pl_offset(int xoffset, int yoffset, int sub_tile_offset, int layer_offset)
-            : x(xoffset), y(yoffset), sub_tile(sub_tile_offset), layer(layer_offset) {}
+        : x(xoffset)
+        , y(yoffset)
+        , sub_tile(sub_tile_offset)
+        , layer(layer_offset) {}
 
     int x = 0;
     int y = 0;
@@ -709,16 +722,16 @@ struct t_pl_offset {
 };
 
 namespace std {
-    template<>
-    struct hash<t_pl_offset> {
-        std::size_t operator()(const t_pl_offset& v) const noexcept {
-            std::size_t seed = std::hash<int>{}(v.x);
-            vtr::hash_combine(seed, v.y);
-            vtr::hash_combine(seed, v.sub_tile);
-            vtr::hash_combine(seed, v.layer);
-            return seed;
-        }
-    };
+template<>
+struct hash<t_pl_offset> {
+    std::size_t operator()(const t_pl_offset& v) const noexcept {
+        std::size_t seed = std::hash<int>{}(v.x);
+        vtr::hash_combine(seed, v.y);
+        vtr::hash_combine(seed, v.sub_tile);
+        vtr::hash_combine(seed, v.layer);
+        return seed;
+    }
+};
 } // namespace std
 
 /**
@@ -735,10 +748,16 @@ struct t_pl_loc {
     t_pl_loc() = default;
 
     t_pl_loc(int xloc, int yloc, int sub_tile_loc, int layer_num)
-            : x(xloc), y(yloc), sub_tile(sub_tile_loc), layer(layer_num) {}
+        : x(xloc)
+        , y(yloc)
+        , sub_tile(sub_tile_loc)
+        , layer(layer_num) {}
 
     t_pl_loc(const t_physical_tile_loc& phy_loc, int sub_tile_loc)
-            : x(phy_loc.x), y(phy_loc.y), sub_tile(sub_tile_loc), layer(phy_loc.layer_num) {}
+        : x(phy_loc.x)
+        , y(phy_loc.y)
+        , sub_tile(sub_tile_loc)
+        , layer(phy_loc.layer_num) {}
 
     int x = OPEN;
     int y = OPEN;
@@ -801,16 +820,16 @@ struct t_pl_loc {
 };
 
 namespace std {
-    template<>
-    struct hash<t_pl_loc> {
-        std::size_t operator()(const t_pl_loc& v) const noexcept {
-            std::size_t seed = std::hash<int>{}(v.x);
-            vtr::hash_combine(seed, v.y);
-            vtr::hash_combine(seed, v.sub_tile);
-            vtr::hash_combine(seed, v.layer);
-            return seed;
-        }
-    };
+template<>
+struct hash<t_pl_loc> {
+    std::size_t operator()(const t_pl_loc& v) const noexcept {
+        std::size_t seed = std::hash<int>{}(v.x);
+        vtr::hash_combine(seed, v.y);
+        vtr::hash_combine(seed, v.sub_tile);
+        vtr::hash_combine(seed, v.layer);
+        return seed;
+    }
+};
 } // namespace std
 
 struct t_place_region {
@@ -858,7 +877,7 @@ struct t_grid_blocks {
 };
 
 class GridBlock {
-public:
+  public:
     GridBlock() = default;
 
     GridBlock(size_t width, size_t height, size_t layers) {
@@ -897,7 +916,7 @@ public:
         grid_blocks_.clear();
     }
 
-private:
+  private:
     vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
 };
 
@@ -1058,14 +1077,14 @@ enum e_place_bounding_box_mode {
  * and e_place_algorithm so as not to break down previous codes.
  */
 class t_place_algorithm {
-public:
+  public:
     //Constructors
     t_place_algorithm() = default;
 
     t_place_algorithm(const t_place_algorithm&) = default;
 
     t_place_algorithm(e_place_algorithm _algo)
-            : algo(_algo) {}
+        : algo(_algo) {}
 
     ~t_place_algorithm() = default;
 
@@ -1097,7 +1116,7 @@ public:
     ///@brief Accessor: returns the underlying e_place_algorithm enum value.
     e_place_algorithm get() const { return algo; }
 
-private:
+  private:
     ///@brief The underlying algorithm. Default set to CRITICALITY_TIMING_PLACE.
     e_place_algorithm algo = e_place_algorithm::CRITICALITY_TIMING_PLACE;
 };
@@ -1646,13 +1665,14 @@ struct t_seg_details {
 };
 
 class t_chan_seg_details {
-public:
+  public:
     t_chan_seg_details() = default;
 
     t_chan_seg_details(const t_seg_details* init_seg_details)
-            : length_(init_seg_details->length), seg_detail_(init_seg_details) {}
+        : length_(init_seg_details->length)
+        , seg_detail_(init_seg_details) {}
 
-public:
+  public:
     int length() const { return length_; }
 
     int seg_start() const { return seg_start_; }
@@ -1691,18 +1711,18 @@ public:
 
     const vtr::string_view type_name() const {
         return vtr::string_view(
-                seg_detail_->type_name.data(),
-                seg_detail_->type_name.size());
+            seg_detail_->type_name.data(),
+            seg_detail_->type_name.size());
     }
 
-public: //Modifiers
+  public: //Modifiers
     void set_length(int new_len) { length_ = new_len; }
 
     void set_seg_start(int new_start) { seg_start_ = new_start; }
 
     void set_seg_end(int new_end) { seg_end_ = new_end; }
 
-private:
+  private:
     //The only unique information about a channel segment is it's start/end
     //and length.  All other information is shared accross segment types,
     //so we use a flyweight to the t_seg_details which defines that info.
@@ -1761,13 +1781,13 @@ struct t_rr_node_route_inf {
     float backward_path_delay;
     float backward_path_congestion;
 
-public: //Accessors
+  public: //Accessors
     short occ() const { return occ_; }
 
-public: //Mutators
+  public: //Mutators
     void set_occ(int new_occ) { occ_ = new_occ; }
 
-private: //Data
+  private: //Data
     short occ_ = 0;
 };
 
@@ -1777,7 +1797,7 @@ private: //Data
  */
 template<typename NetIdType>
 class t_routing_status {
-public:
+  public:
     void clear() {
         is_routed_.assign(is_routed_.size(), 0);
         is_fixed_.assign(is_routed_.size(), 0);
@@ -1806,7 +1826,7 @@ public:
         return is_fixed_[index(net)];
     }
 
-private:
+  private:
     NetIdType index(NetIdType net) const {
         VTR_ASSERT_SAFE(net != NetIdType::INVALID());
         return net;
@@ -1823,7 +1843,8 @@ typedef t_routing_status<AtomNetId> t_atom_net_routing_status;
 /** Edge between two RRNodes */
 struct t_node_edge {
     t_node_edge(RRNodeId fnode, RRNodeId tnode)
-            : from_node(fnode), to_node(tnode) {}
+        : from_node(fnode)
+        , to_node(tnode) {}
 
     RRNodeId from_node;
     RRNodeId to_node;
@@ -1906,11 +1927,12 @@ struct t_vpr_setup {
 };
 
 class RouteStatus {
-public:
+  public:
     RouteStatus() = default;
 
     RouteStatus(bool status_val, int chan_width_val)
-            : success_(status_val), chan_width_(chan_width_val) {}
+        : success_(status_val)
+        , chan_width_(chan_width_val) {}
 
     //Was routing successful?
     operator bool() const { return success(); }
@@ -1920,7 +1942,7 @@ public:
     //What was the channel width?
     int chan_width() const { return chan_width_; }
 
-private:
+  private:
     bool success_ = false;
     int chan_width_ = -1;
 };

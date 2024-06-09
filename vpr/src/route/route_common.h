@@ -104,13 +104,11 @@ inline float get_single_rr_cong_cost(RRNodeId inode, float pres_fac) {
 
     auto cost_index = rr_graph.node_cost_index(inode);
 
-    float cost =
-            device_ctx.rr_indexed_data[cost_index].base_cost * route_ctx.rr_node_route_inf[inode].acc_cost * pres_cost;
+    float cost = device_ctx.rr_indexed_data[cost_index].base_cost * route_ctx.rr_node_route_inf[inode].acc_cost * pres_cost;
 
     VTR_ASSERT_DEBUG_MSG(
-            cost == get_single_rr_cong_base_cost(inode) * get_single_rr_cong_acc_cost(inode) *
-                    get_single_rr_cong_pres_cost(inode, pres_fac),
-            "Single rr node congestion cost is inaccurate");
+        cost == get_single_rr_cong_base_cost(inode) * get_single_rr_cong_acc_cost(inode) * get_single_rr_cong_pres_cost(inode, pres_fac),
+        "Single rr node congestion cost is inaccurate");
 
     return cost;
 }
@@ -126,8 +124,7 @@ void alloc_and_load_rr_node_route_structs();
 
 void reset_rr_node_route_structs();
 
-void
-reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat);
+void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat);
 
 void print_rr_node_route_inf();
 
@@ -160,15 +157,15 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
  * expensive than previously explored path.                                 */
 template<typename T, typename RouteInf>
 t_heap* prepare_to_add_node_to_heap(
-        T* heap,
-        const RouteInf& rr_node_route_inf,
-        RRNodeId inode,
-        float total_cost,
-        RREdgeId prev_edge,
-        float backward_path_cost,
-        float backward_path_delay,
-        float backward_path_congestion,
-        float R_upstream) {
+    T* heap,
+    const RouteInf& rr_node_route_inf,
+    RRNodeId inode,
+    float total_cost,
+    RREdgeId prev_edge,
+    float backward_path_cost,
+    float backward_path_delay,
+    float backward_path_congestion,
+    float R_upstream) {
     if (total_cost >= rr_node_route_inf[inode].path_cost)
         return nullptr;
 
@@ -187,19 +184,19 @@ t_heap* prepare_to_add_node_to_heap(
 /* Puts an rr_node on the heap if it is the cheapest path.    */
 template<typename T, typename RouteInf>
 void add_node_to_heap(
-        T* heap,
-        const RouteInf& rr_node_route_inf,
-        RRNodeId inode,
-        float total_cost,
-        RREdgeId prev_edge,
-        float backward_path_cost,
-        float backward_path_delay,
-        float backward_path_congestion,
-        float R_upstream) {
+    T* heap,
+    const RouteInf& rr_node_route_inf,
+    RRNodeId inode,
+    float total_cost,
+    RREdgeId prev_edge,
+    float backward_path_cost,
+    float backward_path_delay,
+    float backward_path_congestion,
+    float R_upstream) {
     t_heap* hptr = prepare_to_add_node_to_heap(
-            heap,
-            rr_node_route_inf, inode, total_cost,
-            prev_edge, backward_path_cost, backward_path_delay, backward_path_congestion, R_upstream);
+        heap,
+        rr_node_route_inf, inode, total_cost,
+        prev_edge, backward_path_cost, backward_path_delay, backward_path_congestion, R_upstream);
     if (hptr) {
         heap->add_to_heap(hptr);
     }
@@ -210,19 +207,19 @@ void add_node_to_heap(
  * bottom up with build_heap    */
 template<typename T, typename RouteInf>
 void push_back_node(
-        T* heap,
-        const RouteInf& rr_node_route_inf,
-        RRNodeId inode,
-        float total_cost,
-        RREdgeId prev_edge,
-        float backward_path_cost,
-        float backward_path_delay,
-        float backward_path_congestion,
-        float R_upstream) {
+    T* heap,
+    const RouteInf& rr_node_route_inf,
+    RRNodeId inode,
+    float total_cost,
+    RREdgeId prev_edge,
+    float backward_path_cost,
+    float backward_path_delay,
+    float backward_path_congestion,
+    float R_upstream) {
     t_heap* hptr = prepare_to_add_node_to_heap(
-            heap,
-            rr_node_route_inf, inode, total_cost, prev_edge,
-            backward_path_cost, backward_path_delay, backward_path_congestion, R_upstream);
+        heap,
+        rr_node_route_inf, inode, total_cost, prev_edge,
+        backward_path_cost, backward_path_delay, backward_path_congestion, R_upstream);
     if (hptr) {
         heap->push_back(hptr);
     }
@@ -233,13 +230,13 @@ void push_back_node(
  * bottom up with build_heap. Certain information is also added     */
 template<typename T>
 void push_back_node_with_info(
-        T* heap,
-        RRNodeId inode,
-        float total_cost,
-        float backward_path_cost,
-        float R_upstream,
-        float backward_path_delay,
-        PathManager* rcv_path_manager) {
+    T* heap,
+    RRNodeId inode,
+    float total_cost,
+    float backward_path_cost,
+    float R_upstream,
+    float backward_path_delay,
+    PathManager* rcv_path_manager) {
     t_heap* hptr = heap->alloc();
     rcv_path_manager->alloc_path_struct(hptr->path_data);
 

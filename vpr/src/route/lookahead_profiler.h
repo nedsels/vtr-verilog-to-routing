@@ -11,7 +11,7 @@
 #include "connection_router_interface.h"
 
 class LookaheadProfiler {
-public:
+  public:
     LookaheadProfiler();
 
     void record(int iteration,
@@ -25,7 +25,7 @@ public:
                 const ParentNetId& net_id,
                 const Netlist<>& net_list);
 
-private:
+  private:
     std::ofstream lookahead_verifier_csv;
 };
 

@@ -14,7 +14,9 @@
 /* Construct a new RouteTreeNode.
  * Doesn't add the node to parent's child_nodes! (see add_child) */
 RouteTreeNode::RouteTreeNode(RRNodeId _inode, RRSwitchId _parent_switch, RouteTreeNode* parent)
-        : inode(_inode), parent_switch(_parent_switch), _parent(parent) {
+    : inode(_inode)
+    , parent_switch(_parent_switch)
+    , _parent(parent) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -68,7 +70,7 @@ void RouteTreeNode::print_x(int depth) const {
 
     VTR_LOG("\n");
 
-    for (auto& child: child_nodes()) {
+    for (auto& child : child_nodes()) {
         child.print_x(depth + 1);
     }
 }
@@ -104,7 +106,7 @@ RouteTreeNode* RouteTree::copy_tree(const RouteTreeNode* rhs) {
 
 /* Helper for copy_list: copy child nodes of rhs into lhs */
 void RouteTree::copy_tree_x(RouteTreeNode* lhs, const RouteTreeNode& rhs) {
-    for (auto& rchild: rhs.child_nodes()) {
+    for (auto& rchild : rhs.child_nodes()) {
         RouteTreeNode* child = new RouteTreeNode(rchild);
         child->_is_leaf = true;
         add_node(lhs, child);
@@ -241,7 +243,7 @@ void RouteTree::load_new_subtree_R_upstream(RouteTreeNode& rt_node) {
     rt_node.R_upstream = R_upstream;
 
     //Update children
-    for (RouteTreeNode& child: rt_node._child_nodes()) {
+    for (RouteTreeNode& child : rt_node._child_nodes()) {
         load_new_subtree_R_upstream(child);
     }
 }
@@ -254,7 +256,7 @@ float RouteTree::load_new_subtree_C_downstream(RouteTreeNode& from_node) {
 
     float C_downstream = 0.;
     C_downstream += rr_graph.node_C(from_node.inode);
-    for (RouteTreeNode& child: from_node._child_nodes()) {
+    for (RouteTreeNode& child : from_node._child_nodes()) {
         /* When switches such as multiplexers and tristate buffers are enabled, their fanout
          * produces an "internal capacitance". We account for this internal capacitance of the
          * switch by adding it to the total capacitance of the node. */
@@ -340,7 +342,7 @@ void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival) {
     from_node.Tdel = Tdel;
 
     /* Now expand the children of this node to load their Tdel values */
-    for (RouteTreeNode& child: from_node._child_nodes()) {
+    for (RouteTreeNode& child : from_node._child_nodes()) {
         RRSwitchId iswitch = child.parent_switch;
 
         Tchild = Tdel + rr_graph.rr_switch_inf(iswitch).R * child.C_downstream;
@@ -387,8 +389,7 @@ bool RouteTree::is_valid_x(const RouteTreeNode& rt_node) const {
                 return false;
             }
         } else {
-            float R_upstream_check =
-                    rr_graph.node_R(inode) + rt_node.parent().value().R_upstream + rr_graph.rr_switch_inf(iswitch).R;
+            float R_upstream_check = rr_graph.node_R(inode) + rt_node.parent().value().R_upstream + rr_graph.rr_switch_inf(iswitch).R;
             if (!vtr::isclose(rt_node.R_upstream, R_upstream_check, RES_REL_TOL, RES_ABS_TOL)) {
                 VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, rt_node.R_upstream, R_upstream_check);
                 return false;
@@ -418,7 +419,7 @@ bool RouteTree::is_valid_x(const RouteTreeNode& rt_node) const {
 
     // check downstream C
     float C_downstream_children = 0;
-    for (auto& child: rt_node.child_nodes()) {
+    for (auto& child : rt_node.child_nodes()) {
         if (child._parent != std::addressof(rt_node)) {
             VTR_LOG("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n",
                     inode, child.inode,
@@ -463,7 +464,7 @@ bool RouteTree::is_uncongested_x(const RouteTreeNode& rt_node) const {
         return false;
     }
 
-    for (auto& child: rt_node.child_nodes()) {
+    for (auto& child : rt_node.child_nodes()) {
         if (!is_uncongested_x(child)) {
             // The sub-tree connected to this edge is congested
             return false;
@@ -486,9 +487,7 @@ void RouteTree::print(void) const {
  * returns a tuple: RouteTreeNode of the branch it adds to the route tree and
  * RouteTreeNode of the SINK it adds to the routing. */
 std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
-RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup,
-                            bool is_flat, const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params,
-                            const int itry, const Netlist<>& net_list, const ParentNetId& net_id) {
+RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat, const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params, const int itry, const Netlist<>& net_list, const ParentNetId& net_id) {
     /* Lock the route tree for writing. At least on Linux this shouldn't have an impact on single-threaded code */
     std::unique_lock<std::mutex> write_lock(_write_mutex);
 
@@ -519,9 +518,7 @@ RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRoute
  * to the SINK indicated by hptr. Returns the first (most upstream) new rt_node,
  * and the rt_node of the new SINK. Traverses up from SINK  */
 std::tuple<vtr::optional<RouteTreeNode&>, vtr::optional<RouteTreeNode&>>
-RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat,
-                                 const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params,
-                                 const int itry, const Netlist<>& net_list, const ParentNetId& net_id) {
+RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat, const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params, const int itry, const Netlist<>& net_list, const ParentNetId& net_id) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -605,14 +602,14 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
     // Expand (recursively) each of the main-branch nodes adding any
     // non-configurably connected nodes
     // Sink is not included, so no need to pass in the node's ipin value.
-    for (RRNodeId rr_node: main_branch_visited) {
+    for (RRNodeId rr_node : main_branch_visited) {
         add_non_configurable_nodes(_rr_node_to_rt_node.at(rr_node), false, all_visited, is_flat);
     }
 
     /* the first and last nodes we added.
      * vec[size-1] works, because new_branch_inodes is guaranteed to contain at least [sink, found_node] */
     vtr::optional<RouteTreeNode&> downstream_rt_node = *_rr_node_to_rt_node.at(
-            new_branch_inodes[new_branch_inodes.size() - 1]);
+        new_branch_inodes[new_branch_inodes.size() - 1]);
     vtr::optional<RouteTreeNode&> sink_rt_node = *_rr_node_to_rt_node.at(new_branch_inodes[0]);
 
     return {downstream_rt_node, sink_rt_node};
@@ -635,7 +632,7 @@ void RouteTree::add_non_configurable_nodes(RouteTreeNode* rt_node,
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    for (int iedge: rr_graph.non_configurable_edges(rr_node)) {
+    for (int iedge : rr_graph.non_configurable_edges(rr_node)) {
         // Recursive case: expand children
         VTR_ASSERT(!rr_graph.edge_is_configurable(rr_node, iedge));
         RRNodeId to_rr_node = rr_graph.edge_sink_node(rr_node, iedge);
@@ -691,8 +688,7 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
  * Recursively traverse the route tree rooted at node and remove any congested subtrees.
  * Returns nullopt if pruned */
 vtr::optional<RouteTreeNode&>
-RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_prune,
-                   std::vector<int>* non_config_node_set_usage) {
+RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_prune, std::vector<int>* non_config_node_set_usage) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -726,8 +722,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
         } else { // Pruned
             // After removing a child node, check if non_config_node_set_usage
             // needs an update.
-            if (non_config_node_set_usage != nullptr && node_set != -1 &&
-                rr_graph.rr_switch_inf(child.parent_switch).configurable()) {
+            if (non_config_node_set_usage != nullptr && node_set != -1 && rr_graph.rr_switch_inf(child.parent_switch).configurable()) {
                 (*non_config_node_set_usage)[node_set] -= 1;
                 VTR_ASSERT((*non_config_node_set_usage)[node_set] >= 0);
             }
@@ -805,9 +800,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
         //
         //  Then prune this node.
         //
-        if (non_config_node_set_usage != nullptr && node_set != -1 &&
-            rr_graph.rr_switch_inf(rt_node.parent_switch).configurable() &&
-            (*non_config_node_set_usage)[node_set] == 0) {
+        if (non_config_node_set_usage != nullptr && node_set != -1 && rr_graph.rr_switch_inf(rt_node.parent_switch).configurable() && (*non_config_node_set_usage)[node_set] == 0) {
             // This node should be pruned, re-prune edges once more.
             //
             // If the following is true:
@@ -894,7 +887,7 @@ std::vector<int> RouteTree::get_non_config_node_set_usage(void) const {
 
     const auto& rr_to_nonconf = device_ctx.rr_node_to_non_config_node_set;
 
-    for (auto& rt_node: all_nodes()) {
+    for (auto& rt_node : all_nodes()) {
         auto it = rr_to_nonconf.find(rt_node.inode);
         if (it == rr_to_nonconf.end())
             continue;
@@ -906,7 +899,7 @@ std::vector<int> RouteTree::get_non_config_node_set_usage(void) const {
             continue;
         }
 
-        for (auto& child: rt_node.child_nodes()) {
+        for (auto& child : rt_node.child_nodes()) {
             if (device_ctx.rr_graph.rr_switch_inf(child.parent_switch).configurable()) {
                 usage[it->second] += 1;
             }

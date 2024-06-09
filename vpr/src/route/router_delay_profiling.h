@@ -8,7 +8,7 @@
 #include <vector>
 
 class RouterDelayProfiler {
-public:
+  public:
     RouterDelayProfiler(const Netlist<>& net_list,
                         const RouterLookahead* lookahead,
                         bool is_flat);
@@ -45,7 +45,7 @@ public:
     // Get Netlist
     const Netlist<>& get_net_list();
 
-private:
+  private:
     const Netlist<>& net_list_;
     RouterStats router_stats_;
     ConnectionRouter<BinaryHeap> router_;

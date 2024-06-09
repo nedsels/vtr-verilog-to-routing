@@ -53,8 +53,7 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
     return router_lookahead;
 }
 
-float ClassicLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params,
-                                          float R_upstream) const {
+float ClassicLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     float delay_cost, cong_cost;
     std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
@@ -62,8 +61,7 @@ float ClassicLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target
 }
 
 std::pair<float, float>
-ClassicLookahead::get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params,
-                                              float R_upstream) const {
+ClassicLookahead::get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -106,9 +104,7 @@ ClassicLookahead::get_expected_delay_and_cong(RRNodeId node, RRNodeId target_nod
  * FOR ROUTER LOOKAHEAD VERIFIER
  */
 std::pair<float, float>
-ClassicLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId node, RRNodeId target_node,
-                                                                 const t_conn_cost_params& /*params*/,
-                                                                 float R_upstream) const {
+ClassicLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& /*params*/, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -147,14 +143,11 @@ ClassicLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId node, 
     }
 }
 
-float NoOpLookahead::get_expected_cost(RRNodeId /*current_node*/, RRNodeId /*target_node*/,
-                                       const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
+float NoOpLookahead::get_expected_cost(RRNodeId /*current_node*/, RRNodeId /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return 0.;
 }
 
-std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(RRNodeId /*node*/, RRNodeId /*target_node*/,
-                                                                   const t_conn_cost_params& /*params*/,
-                                                                   float /*R_upstream*/) const {
+std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(RRNodeId /*node*/, RRNodeId /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return std::make_pair(0., 0.);
 }
 
@@ -162,9 +155,7 @@ std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(RRNodeId /*no
  * FOR ROUTER LOOKAHEAD VERIFIER
  */
 std::pair<float, float>
-NoOpLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId /*node*/, RRNodeId /*target_node*/,
-                                                              const t_conn_cost_params& /*params*/,
-                                                              float /*R_upstream*/) const {
+NoOpLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId /*node*/, RRNodeId /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return std::make_pair(0., 0.);
 }
 
@@ -279,12 +270,12 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
         return router_lookahead;
     } else {
         return mut_router_ctx.cached_router_lookahead_.set(
-                cache_key,
-                make_router_lookahead(det_routing_arch,
-                                      router_lookahead_type,
-                                      write_lookahead,
-                                      read_lookahead,
-                                      segment_inf,
-                                      is_flat));
+            cache_key,
+            make_router_lookahead(det_routing_arch,
+                                  router_lookahead_type,
+                                  write_lookahead,
+                                  read_lookahead,
+                                  segment_inf,
+                                  is_flat));
     }
 }

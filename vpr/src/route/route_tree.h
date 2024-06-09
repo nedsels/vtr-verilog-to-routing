@@ -103,7 +103,7 @@
 class RouteTreeNode {
     friend class RouteTree;
 
-public:
+  public:
     RouteTreeNode() = delete;
 
     RouteTreeNode(const RouteTreeNode&) = default;
@@ -126,12 +126,12 @@ public:
      * routing to act as a source for subsequent connections? */
     bool re_expand;
 
-private:
+  private:
     /** Is this a leaf? add_node and remove_child_if should be keeping this valid.
      * Needed to know if _next points to the first child */
     bool _is_leaf = true;
 
-public:
+  public:
     /** Time delay for the signal to get from the net source to this node.
      * Includes the time to go through this node. */
     float Tdel;
@@ -160,7 +160,7 @@ public:
      * to stop */
     template<class ref>
     class RTIterator {
-    public:
+      public:
         using iterator_category = std::forward_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using value_type = RouteTreeNode;
@@ -168,7 +168,7 @@ public:
         using reference = ref;
 
         constexpr RTIterator(RouteTreeNode* p)
-                : _p(p) {}
+            : _p(p) {}
 
         constexpr reference operator*() const {
             return const_cast<ref>(*_p);
@@ -189,7 +189,7 @@ public:
 
         constexpr bool operator!=(const RTIterator& rhs) { return _p != rhs._p; }
 
-    private:
+      private:
         /** My current node */
         RouteTreeNode* _p;
     };
@@ -201,7 +201,7 @@ public:
      * ends, so we can just walk the _next ptrs until we find that */
     template<class ref>
     class RTRecIterator {
-    public:
+      public:
         using iterator_category = std::forward_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using value_type = RouteTreeNode;
@@ -209,7 +209,7 @@ public:
         using reference = ref;
 
         constexpr RTRecIterator(RouteTreeNode* p)
-                : _p(p) {}
+            : _p(p) {}
 
         constexpr reference operator*() const {
             return const_cast<ref>(*_p);
@@ -230,7 +230,7 @@ public:
 
         constexpr bool operator!=(const RTRecIterator& rhs) { return _p != rhs._p; }
 
-    private:
+      private:
         /** My current node */
         RouteTreeNode* _p;
     };
@@ -239,15 +239,16 @@ public:
      * .child_nodes() returns Iterable<RTIterator> while .all_nodes() returns Iterable<RTRecIterator> */
     template<class Iterator>
     class Iterable {
-    public:
+      public:
         constexpr Iterable(RouteTreeNode* node1, RouteTreeNode* node2)
-                : _node1(node1), _node2(node2) {}
+            : _node1(node1)
+            , _node2(node2) {}
 
         constexpr Iterator begin() const { return Iterator(_node1); }
 
         constexpr Iterator end() const { return Iterator(_node2); }
 
-    private:
+      private:
         RouteTreeNode* _node1;
         RouteTreeNode* _node2;
     };
@@ -297,7 +298,7 @@ public:
         return !(lhs == rhs);
     }
 
-private:
+  private:
     void print_x(int depth) const;
 
     /** Traverse child nodes, mutable reference */
@@ -345,7 +346,7 @@ class TracebackCompat;
 class RouteTree {
     friend class TracebackCompat;
 
-public:
+  public:
     RouteTree() = delete;
 
     RouteTree(const RouteTree&);
@@ -377,9 +378,7 @@ public:
      * RouteTreeNode of the SINK it adds to the routing.
      * Locking operation: only one thread can update_from_heap() a RouteTree at a time. */
     std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
-    update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat,
-                     const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params, const int itry,
-                     const Netlist<>& net_list, const ParentNetId& net_id);
+    update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat, const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params, const int itry, const Netlist<>& net_list, const ParentNetId& net_id);
 
     /** Reload timing values (R_upstream, C_downstream, Tdel).
      * Can take a RouteTreeNode& to do an incremental update.
@@ -448,7 +447,7 @@ public:
      * and only returns a value when the sink state is right */
     template<bool sink_state>
     class IsinkIterator {
-    public:
+      public:
         using iterator_category = std::forward_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using value_type = int;
@@ -456,7 +455,8 @@ public:
         using reference = int&;
 
         constexpr IsinkIterator(const vtr::dynamic_bitset<>& bitset, size_t x)
-                : _bitset(bitset), _x(x) {
+            : _bitset(bitset)
+            , _x(x) {
             if (_x < _bitset.size() && _bitset.get(_x) != sink_state) /* Iterate forward to a valid state */
                 ++(*this);
         }
@@ -467,7 +467,8 @@ public:
 
         inline IsinkIterator& operator++() {
             _x++;
-            for (; _x < _bitset.size() && _bitset.get(_x) != sink_state; _x++);
+            for (; _x < _bitset.size() && _bitset.get(_x) != sink_state; _x++)
+                ;
             return *this;
         }
 
@@ -481,7 +482,7 @@ public:
 
         constexpr bool operator!=(const IsinkIterator& rhs) { return _x != rhs._x; }
 
-    private:
+      private:
         /** Ref to the bitset */
         const vtr::dynamic_bitset<>& _bitset;
         /** Current position */
@@ -516,11 +517,9 @@ public:
                                IsinkIterator<false>(_is_isink_reached, _num_sinks + 1));
     }
 
-private:
+  private:
     std::tuple<vtr::optional<RouteTreeNode&>, vtr::optional<RouteTreeNode&>>
-    add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat, const RouterLookahead& router_lookahead,
-                          const t_conn_cost_params cost_params, const int itry, const Netlist<>& net_list,
-                          const ParentNetId& net_id);
+    add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat, const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params, const int itry, const Netlist<>& net_list, const ParentNetId& net_id);
 
     void add_non_configurable_nodes(RouteTreeNode* rt_node,
                                     bool reached_by_non_configurable_edge,

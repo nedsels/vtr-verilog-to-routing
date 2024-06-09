@@ -106,8 +106,8 @@
 
 #ifndef NO_SERVER
 
-#include "gateio.h"
-#include "serverupdate.h"
+#    include "gateio.h"
+#    include "serverupdate.h"
 
 #endif /* NO_SERVER */
 
@@ -261,7 +261,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which VPR_ERRORs
      * are demoted to VTR_LOG_WARNs
      */
-    for (const std::string& func_name: vtr::split(options->disable_errors.value(), ":")) {
+    for (const std::string& func_name : vtr::split(options->disable_errors.value(), ":")) {
         map_error_activation_status(func_name);
     }
 
@@ -282,7 +282,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     }
 
     set_noisy_warn_log_file(warn_log_file);
-    for (const std::string& func_name: vtr::split(warn_functions, std::string(":"))) {
+    for (const std::string& func_name : vtr::split(warn_functions, std::string(":"))) {
         add_warnings_to_suppress(func_name);
     }
 
@@ -342,8 +342,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         auto& timing_ctx = g_vpr_ctx.mutable_timing();
         {
             vtr::ScopedStartFinishTimer t("Build Timing Graph");
-            timing_ctx.graph = TimingGraphBuilder(atom_ctx.nlist, atom_ctx.lookup).timing_graph(
-                    options->allow_dangling_combinational_nodes);
+            timing_ctx.graph = TimingGraphBuilder(atom_ctx.nlist, atom_ctx.lookup).timing_graph(options->allow_dangling_combinational_nodes);
             VTR_LOG("  Timing Graph Nodes: %zu\n", timing_ctx.graph->nodes().size());
             VTR_LOG("  Timing Graph Edges: %zu\n", timing_ctx.graph->edges().size());
             VTR_LOG("  Timing Graph Levels: %zu\n", timing_ctx.graph->levels().size());
@@ -404,7 +403,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     vpr_init_server(vpr_setup);
 
     { //Place
-        const auto& placement_net_list = (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+        const auto& placement_net_list = (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
         bool place_success = vpr_place_flow(placement_net_list, vpr_setup, arch);
 
         if (!place_success) {
@@ -413,8 +412,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist
-                                               : (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist
+                                               : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     RouteStatus route_status;
     { //Route
         route_status = vpr_route_flow(router_net_list, vpr_setup, arch, is_flat);
@@ -461,7 +460,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     //Record the resource requirement
     std::map<t_logical_block_type_ptr, size_t> num_type_instances;
-    for (auto blk_id: cluster_ctx.clb_nlist.blocks()) {
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         num_type_instances[cluster_ctx.clb_nlist.block_type(blk_id)]++;
     }
 
@@ -482,17 +481,17 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     VTR_LOG("\n");
     VTR_LOG("Resource usage...\n");
-    for (const auto& type: device_ctx.logical_block_types) {
+    for (const auto& type : device_ctx.logical_block_types) {
         if (is_empty_type(&type)) continue;
 
         VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
                 num_type_instances[&type], type.name);
 
         VTR_LOG("\tArchitecture\n");
-        for (const auto equivalent_tile: type.equivalent_tiles) {
+        for (const auto equivalent_tile : type.equivalent_tiles) {
             auto num_instances = 0;
             //get the number of equivalent tile across all layers
-            num_instances = (int) device_ctx.grid.num_instances(equivalent_tile, -1);
+            num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
 
             VTR_LOG("\t\t%d\tblocks of type: %s\n",
                     num_instances, equivalent_tile->name);
@@ -502,7 +501,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
-    for (const auto& type: device_ctx.physical_tile_types) {
+    for (const auto& type : device_ctx.physical_tile_types) {
         if (is_empty_type(&type)) {
             continue;
         }
@@ -512,7 +511,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
             auto equivalent_sites = get_equivalent_sites_set(&type);
 
-            for (auto logical_block: equivalent_sites) {
+            for (auto logical_block : equivalent_sites) {
                 float util = 0.;
                 size_t num_inst = device_ctx.grid.num_instances(&type, -1);
                 if (num_inst != 0) {
@@ -526,7 +525,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     if (!device_ctx.grid.limiting_resources().empty()) {
         std::vector<std::string> limiting_block_names;
-        for (auto blk_type: device_ctx.grid.limiting_resources()) {
+        for (auto blk_type : device_ctx.grid.limiting_resources()) {
             limiting_block_names.emplace_back(blk_type->name);
         }
         VTR_LOG("FPGA size limited by block type(s): %s\n", vtr::join(limiting_block_names, " ").c_str());
@@ -667,11 +666,11 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
          * product of the equivalent resistance and capacitance experienced by the wire. */
 
         float first_wire_seg_delay = opin_switch_del
-                                     + (R_opin_switch + Rmetal * (float) wire_segment_length / 2)
-                                       * (Cout_opin_switch + Cmetal * (float) wire_segment_length);
+                                     + (R_opin_switch + Rmetal * (float)wire_segment_length / 2)
+                                           * (Cout_opin_switch + Cmetal * (float)wire_segment_length);
         float second_wire_seg_delay = wire_switch_del
-                                      + (R_wire_switch + Rmetal * (float) wire_segment_length / 2)
-                                        * (Cout_wire_switch + Cmetal * (float) wire_segment_length);
+                                      + (R_wire_switch + Rmetal * (float)wire_segment_length / 2)
+                                            * (Cout_wire_switch + Cmetal * (float)wire_segment_length);
         inter_cluster_delay = 4
                               * (first_wire_seg_delay + second_wire_seg_delay
                                  + wtoi_switch_del); /* multiply by 4 to get a more conservative estimate */
@@ -752,12 +751,12 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
         // the placer timer.
         // Flat_routing is disabled in placement
         get_cached_router_lookahead(
-                vpr_setup.RoutingArch,
-                vpr_setup.RouterOpts.lookahead_type,
-                vpr_setup.RouterOpts.write_router_lookahead,
-                vpr_setup.RouterOpts.read_router_lookahead,
-                vpr_setup.Segments,
-                is_flat);
+            vpr_setup.RoutingArch,
+            vpr_setup.RouterOpts.lookahead_type,
+            vpr_setup.RouterOpts.write_router_lookahead,
+            vpr_setup.RouterOpts.read_router_lookahead,
+            vpr_setup.Segments,
+            is_flat);
     }
 
     try_place(net_list,
@@ -944,12 +943,12 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
                               NetPinsMatrix<float>& net_delay,
                               bool is_flat) {
     get_cached_router_lookahead(
-            vpr_setup.RoutingArch,
-            vpr_setup.RouterOpts.lookahead_type,
-            vpr_setup.RouterOpts.write_router_lookahead,
-            vpr_setup.RouterOpts.read_router_lookahead,
-            vpr_setup.Segments,
-            is_flat);
+        vpr_setup.RoutingArch,
+        vpr_setup.RouterOpts.lookahead_type,
+        vpr_setup.RouterOpts.write_router_lookahead,
+        vpr_setup.RouterOpts.read_router_lookahead,
+        vpr_setup.Segments,
+        is_flat);
 
     vtr::ScopedStartFinishTimer timer("Routing");
 
@@ -991,7 +990,7 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
 
     auto& router_opts = vpr_setup.RouterOpts;
     // Placement does not use atom_net list regardless of the status of flat_routing.
-    int min_W = binary_search_place_and_route((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
+    int min_W = binary_search_place_and_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
                                               net_list,
                                               vpr_setup.PlacerOpts,
                                               vpr_setup.AnnealSched,
@@ -1030,8 +1029,8 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
     //Load the routing from a file
     bool is_legal = read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, filename_opts.verify_file_digests,
                                is_flat);
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist
-                                               : (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist
+                                               : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     if (vpr_setup.Timing.timing_analysis_enabled) {
         //Update timing info
         load_net_delay_from_routing(router_net_list,
@@ -1143,7 +1142,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 
     //Estimate the maximum Fc_in/Fc_out
 
-    for (const t_fc_specification& fc_spec: type->fc_specs) {
+    for (const t_fc_specification& fc_spec : type->fc_specs) {
         float Fc = fc_spec.fc_value;
 
         if (fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE) {
@@ -1152,7 +1151,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
         }
         VTR_ASSERT_MSG(Fc >= 0 && Fc <= 1., "Fc should be fractional");
 
-        for (int ipin: fc_spec.pins) {
+        for (int ipin : fc_spec.pins) {
             e_pin_type pin_type = get_pin_type_from_pin_physical_num(type, ipin);
 
             if (pin_type == DRIVER) {
@@ -1199,7 +1198,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     } else if (directionality == BI_DIRECTIONAL) {
         /* no adjustments need to be made here */
     } else {
-        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unrecognized directionality: %d\n", (int) directionality);
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unrecognized directionality: %d\n", (int)directionality);
     }
 }
 
@@ -1229,7 +1228,7 @@ static void free_complex_block_types() {
 void free_circuit() {
     //Free new net structures
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    for (auto blk_id: cluster_ctx.clb_nlist.blocks())
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks())
         cluster_ctx.clb_nlist.remove_block(blk_id);
 
     cluster_ctx.clb_nlist = ClusteredNetlist();
@@ -1383,7 +1382,7 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
     if (analysis_opts.doAnalysis == STAGE_AUTO && !route_status.success()) return false; //Not run
 
     VTR_ASSERT_MSG(analysis_opts.doAnalysis == STAGE_DO
-                   || (analysis_opts.doAnalysis == STAGE_AUTO && route_status.success()),
+                       || (analysis_opts.doAnalysis == STAGE_AUTO && route_status.success()),
                    "Analysis should run only if forced, or implementation legal");
 
     if (!route_status.success()) {
@@ -1418,7 +1417,7 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
                                          post_routing_packing_output_file_name.c_str());
         } else {
             VTR_LOG_WARN(
-                    "Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
+                "Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
         }
         VTR_LOG("\n");
     }
@@ -1478,11 +1477,11 @@ void vpr_analysis(const Netlist<>& net_list,
         //Timing stats
         VTR_LOG("\n");
         generate_hold_timing_stats(/*prefix=*/"", *timing_info,
-                                              *analysis_delay_calc, vpr_setup.AnalysisOpts,
-                                              vpr_setup.RouterOpts.flat_routing);
+                                   *analysis_delay_calc, vpr_setup.AnalysisOpts,
+                                   vpr_setup.RouterOpts.flat_routing);
         generate_setup_timing_stats(/*prefix=*/"", *timing_info,
-                                               *analysis_delay_calc, vpr_setup.AnalysisOpts,
-                                               vpr_setup.RouterOpts.flat_routing);
+                                    *analysis_delay_calc, vpr_setup.AnalysisOpts,
+                                    vpr_setup.RouterOpts.flat_routing);
 
         //Write the post-syntesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {

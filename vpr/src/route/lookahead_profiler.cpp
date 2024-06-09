@@ -12,14 +12,6 @@
 #include "vpr_utils.h"
 #include "re_cluster_util.h"
 
-
-static inline std::string to_string_scientific(float val) {
-    const int n =
-            __gnu_cxx::__numeric_traits<float>::__max_exponent10 + 20;
-    return __gnu_cxx::__to_xstring<std::string>(&std::vsnprintf, n,
-                                                "%e", val);
-}
-
 LookaheadProfiler lookahead_profiler = LookaheadProfiler();
 
 LookaheadProfiler::LookaheadProfiler() {
@@ -31,28 +23,28 @@ LookaheadProfiler::LookaheadProfiler() {
     }
 
     lookahead_verifier_csv
-            << "iteration no."
-            << ",source node"
-            << ",sink node"
-            << ",sink block name"
-            << ",sink atom block model"
-            << ",sink cluster block type"
-            << ",sink cluster tile height"
-            << ",sink cluster tile width"
-            << ",current node"
-            << ",node type"
-            << ",node length"
-            << ",num. nodes from sink"
-            << ",delta x"
-            << ",delta y"
-            << ",actual cost"
-            << ",actual delay"
-            << ",actual congestion"
-            << ",predicted cost"
-            << ",predicted delay"
-            << ",predicted congestion"
-            << ",criticality"
-            << std::endl;
+        << "iteration no."
+        << ",source node"
+        << ",sink node"
+        << ",sink block name"
+        << ",sink atom block model"
+        << ",sink cluster block type"
+        << ",sink cluster tile height"
+        << ",sink cluster tile width"
+        << ",current node"
+        << ",node type"
+        << ",node length"
+        << ",num. nodes from sink"
+        << ",delta x"
+        << ",delta y"
+        << ",actual cost"
+        << ",actual delay"
+        << ",actual congestion"
+        << ",predicted cost"
+        << ",predicted delay"
+        << ",predicted congestion"
+        << ",criticality"
+        << std::endl;
 }
 
 void LookaheadProfiler::record(const int iteration,
@@ -89,7 +81,8 @@ void LookaheadProfiler::record(const int iteration,
                                                               0.0);
     float lookahead_delay, lookahead_congestion;
     std::tie(lookahead_delay,
-             lookahead_congestion) = router_lookahead.get_expected_delay_and_cong_ignore_criticality(
+             lookahead_congestion)
+        = router_lookahead.get_expected_delay_and_cong_ignore_criticality(
             curr_inode, sink_inode, cost_params, 0.0);
 
     std::string block_name = "--";
@@ -148,26 +141,26 @@ void LookaheadProfiler::record(const int iteration,
             break;
     }
 
-    lookahead_verifier_csv << iteration << ",";             // iteration no.
-    lookahead_verifier_csv << source_inode << ",";          // source node
-    lookahead_verifier_csv << sink_inode << ",";            // sink node
-    lookahead_verifier_csv << block_name << ",";            // sink block name
-    lookahead_verifier_csv << atom_block_model << ",";      // sink atom block model
-    lookahead_verifier_csv << cluster_block_type << ",";    // sink cluster block type
-    lookahead_verifier_csv << tile_height << ",";           // sink cluster tile height
-    lookahead_verifier_csv << tile_width << ",";            // sink cluster tile width
-    lookahead_verifier_csv << curr_inode << ",";            // current node
-    lookahead_verifier_csv << node_type_str << ",";         // node type
-    lookahead_verifier_csv << node_length << ",";           // node length
-    lookahead_verifier_csv << nodes_from_sink << ",";       // num. nodes from sink
-    lookahead_verifier_csv << delta_x << ",";               // delta x
-    lookahead_verifier_csv << delta_y << ",";               // delta y
-    lookahead_verifier_csv << djikstra_cost << ",";         // actual cost
-    lookahead_verifier_csv << djikstra_delay << ",";        // actual delay
-    lookahead_verifier_csv << djikstra_congestion << ",";   // actual congestion
-    lookahead_verifier_csv << lookahead_cost << ",";        // predicted cost
-    lookahead_verifier_csv << lookahead_delay << ",";       // predicted delay
-    lookahead_verifier_csv << lookahead_congestion << ",";  // predicted congestion
-    lookahead_verifier_csv << cost_params.criticality;      // criticality
+    lookahead_verifier_csv << iteration << ",";            // iteration no.
+    lookahead_verifier_csv << source_inode << ",";         // source node
+    lookahead_verifier_csv << sink_inode << ",";           // sink node
+    lookahead_verifier_csv << block_name << ",";           // sink block name
+    lookahead_verifier_csv << atom_block_model << ",";     // sink atom block model
+    lookahead_verifier_csv << cluster_block_type << ",";   // sink cluster block type
+    lookahead_verifier_csv << tile_height << ",";          // sink cluster tile height
+    lookahead_verifier_csv << tile_width << ",";           // sink cluster tile width
+    lookahead_verifier_csv << curr_inode << ",";           // current node
+    lookahead_verifier_csv << node_type_str << ",";        // node type
+    lookahead_verifier_csv << node_length << ",";          // node length
+    lookahead_verifier_csv << nodes_from_sink << ",";      // num. nodes from sink
+    lookahead_verifier_csv << delta_x << ",";              // delta x
+    lookahead_verifier_csv << delta_y << ",";              // delta y
+    lookahead_verifier_csv << djikstra_cost << ",";        // actual cost
+    lookahead_verifier_csv << djikstra_delay << ",";       // actual delay
+    lookahead_verifier_csv << djikstra_congestion << ",";  // actual congestion
+    lookahead_verifier_csv << lookahead_cost << ",";       // predicted cost
+    lookahead_verifier_csv << lookahead_delay << ",";      // predicted delay
+    lookahead_verifier_csv << lookahead_congestion << ","; // predicted congestion
+    lookahead_verifier_csv << cost_params.criticality;     // criticality
     lookahead_verifier_csv << std::endl;
 }
