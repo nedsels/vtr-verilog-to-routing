@@ -266,6 +266,94 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 
+/*
+ * FOR ROUTER LOOKAHEAD VERIFIER
+ */
+std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+    if (from_node == to_node) {
+        return std::make_pair(0., 0.);
+    }
+
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    int from_x = rr_graph.node_xlow(from_node);
+    int from_y = rr_graph.node_ylow(from_node);
+
+    int to_x = rr_graph.node_xlow(to_node);
+    int to_y = rr_graph.node_ylow(to_node);
+
+    int to_layer_num = rr_graph.node_layer(to_node);
+
+    int dx, dy;
+    dx = to_x - from_x;
+    dy = to_y - from_y;
+
+    e_rr_type from_type = rr_graph.node_type(from_node);
+    if (from_type == SOURCE || from_type == OPIN) {
+        return this->get_src_opin_cost(from_node, dx, dy, to_layer_num, params);
+    } else if (from_type == IPIN) {
+        return std::make_pair(0., 0.);
+    }
+
+    int from_seg_index = cost_map_.node_to_segment(size_t(from_node));
+    util::Cost_Entry cost_entry = cost_map_.find_cost(from_seg_index, dx, dy);
+
+    if (!cost_entry.valid()) {
+        // there is no route
+        VTR_LOGV_DEBUG(f_router_debug,
+                       "Not connected %d (%s, %d) -> %d (%s)\n",
+                       size_t(from_node), rr_graph.node_type_string(from_node), from_seg_index,
+                       size_t(to_node), rr_graph.node_type_string(to_node));
+        float infinity = std::numeric_limits<float>::infinity();
+        return std::make_pair(infinity, infinity);
+    }
+
+    float expected_delay = cost_entry.delay;
+    float expected_congestion = cost_entry.congestion;
+
+    // The CHAN -> IPIN delay was removed from the cost map calculation, as it might tamper the addition
+    // of a smaller cost to this node location. This might happen as not all the CHAN -> IPIN connection
+    // have a delay, therefore, a different cost than the correct one might have been added to the cost
+    // map location of the input node.
+    //
+    // The CHAN -> IPIN delay gets re-added to the final calculation as it effectively is a valid delay
+    // to reach the destination.
+    //
+    // TODO: Capture this delay as a funtion of both the current wire type and the ipin to have a more
+    //       realistic excpected cost returned.
+    float site_pin_delay = this->get_chan_ipin_delays(to_node);
+    expected_delay += site_pin_delay;
+
+    float expected_delay_cost = /* params.criticality * */ expected_delay;
+    float expected_cong_cost = /* (1.0 - params.criticality) * */ expected_congestion;
+
+    float expected_cost = expected_delay_cost + expected_cong_cost;
+
+    VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", size_t(from_node), size_t(to_node));
+    const std::string& segment_name = rr_graph.rr_segments(RRSegmentId(from_seg_index)).name;
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%d, %d)\n",
+                   segment_name.c_str(), from_seg_index,
+                   dx, dy);
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead delay: %g\n", expected_delay_cost);
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead congestion: %g\n", expected_cong_cost);
+    VTR_LOGV_DEBUG(f_router_debug, "Criticality: %g\n", params.criticality);
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead cost: %g\n", expected_cost);
+    VTR_LOGV_DEBUG(f_router_debug, "Site pin delay: %g\n", site_pin_delay);
+
+    if (!std::isfinite(expected_cost)) {
+        VTR_LOG_ERROR("infinite cost for segment %d at (%d, %d)\n", from_seg_index, (int)dx, (int)dy);
+        VTR_ASSERT(0);
+    }
+
+    if (expected_cost < 0.f) {
+        VTR_LOG_ERROR("negative cost for segment %d at (%d, %d)\n", from_seg_index, (int)dx, (int)dy);
+        VTR_ASSERT(0);
+    }
+
+    return std::make_pair(expected_delay_cost, expected_cong_cost);
+}
+
 // Adds a best cost routing path from start_node_ind to node_ind to routing costs
 //
 // This routine performs a backtrace from a destination node to the starting node of each path found during the dijkstra expansion.

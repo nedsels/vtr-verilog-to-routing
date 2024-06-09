@@ -1,18 +1,20 @@
-#include "route_tree.h"
+#include <fstream>
 
+#include "route_tree.h"
 #include "connection_based_routing.h"
 #include "globals.h"
 #include "netlist_fwd.h"
 #include "route_debug.h"
 #include "rr_graph_fwd.h"
 #include "vtr_math.h"
+#include "re_cluster_util.h"
+#include "router_lookahead_map_utils.h"
+#include "lookahead_profiler.h"
 
 /* Construct a new RouteTreeNode.
  * Doesn't add the node to parent's child_nodes! (see add_child) */
 RouteTreeNode::RouteTreeNode(RRNodeId _inode, RRSwitchId _parent_switch, RouteTreeNode* parent)
-    : inode(_inode)
-    , parent_switch(_parent_switch)
-    , _parent(parent) {
+        : inode(_inode), parent_switch(_parent_switch), _parent(parent) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -66,7 +68,7 @@ void RouteTreeNode::print_x(int depth) const {
 
     VTR_LOG("\n");
 
-    for (auto& child : child_nodes()) {
+    for (auto& child: child_nodes()) {
         child.print_x(depth + 1);
     }
 }
@@ -102,7 +104,7 @@ RouteTreeNode* RouteTree::copy_tree(const RouteTreeNode* rhs) {
 
 /* Helper for copy_list: copy child nodes of rhs into lhs */
 void RouteTree::copy_tree_x(RouteTreeNode* lhs, const RouteTreeNode& rhs) {
-    for (auto& rchild : rhs.child_nodes()) {
+    for (auto& rchild: rhs.child_nodes()) {
         RouteTreeNode* child = new RouteTreeNode(rchild);
         child->_is_leaf = true;
         add_node(lhs, child);
@@ -239,7 +241,7 @@ void RouteTree::load_new_subtree_R_upstream(RouteTreeNode& rt_node) {
     rt_node.R_upstream = R_upstream;
 
     //Update children
-    for (RouteTreeNode& child : rt_node._child_nodes()) {
+    for (RouteTreeNode& child: rt_node._child_nodes()) {
         load_new_subtree_R_upstream(child);
     }
 }
@@ -252,7 +254,7 @@ float RouteTree::load_new_subtree_C_downstream(RouteTreeNode& from_node) {
 
     float C_downstream = 0.;
     C_downstream += rr_graph.node_C(from_node.inode);
-    for (RouteTreeNode& child : from_node._child_nodes()) {
+    for (RouteTreeNode& child: from_node._child_nodes()) {
         /* When switches such as multiplexers and tristate buffers are enabled, their fanout
          * produces an "internal capacitance". We account for this internal capacitance of the
          * switch by adding it to the total capacitance of the node. */
@@ -338,7 +340,7 @@ void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival) {
     from_node.Tdel = Tdel;
 
     /* Now expand the children of this node to load their Tdel values */
-    for (RouteTreeNode& child : from_node._child_nodes()) {
+    for (RouteTreeNode& child: from_node._child_nodes()) {
         RRSwitchId iswitch = child.parent_switch;
 
         Tchild = Tdel + rr_graph.rr_switch_inf(iswitch).R * child.C_downstream;
@@ -385,7 +387,8 @@ bool RouteTree::is_valid_x(const RouteTreeNode& rt_node) const {
                 return false;
             }
         } else {
-            float R_upstream_check = rr_graph.node_R(inode) + rt_node.parent().value().R_upstream + rr_graph.rr_switch_inf(iswitch).R;
+            float R_upstream_check =
+                    rr_graph.node_R(inode) + rt_node.parent().value().R_upstream + rr_graph.rr_switch_inf(iswitch).R;
             if (!vtr::isclose(rt_node.R_upstream, R_upstream_check, RES_REL_TOL, RES_ABS_TOL)) {
                 VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, rt_node.R_upstream, R_upstream_check);
                 return false;
@@ -415,7 +418,7 @@ bool RouteTree::is_valid_x(const RouteTreeNode& rt_node) const {
 
     // check downstream C
     float C_downstream_children = 0;
-    for (auto& child : rt_node.child_nodes()) {
+    for (auto& child: rt_node.child_nodes()) {
         if (child._parent != std::addressof(rt_node)) {
             VTR_LOG("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n",
                     inode, child.inode,
@@ -460,7 +463,7 @@ bool RouteTree::is_uncongested_x(const RouteTreeNode& rt_node) const {
         return false;
     }
 
-    for (auto& child : rt_node.child_nodes()) {
+    for (auto& child: rt_node.child_nodes()) {
         if (!is_uncongested_x(child)) {
             // The sub-tree connected to this edge is congested
             return false;
@@ -483,13 +486,17 @@ void RouteTree::print(void) const {
  * returns a tuple: RouteTreeNode of the branch it adds to the route tree and
  * RouteTreeNode of the SINK it adds to the routing. */
 std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
-RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat, RouterLookahead& router_lookahead, const t_conn_cost_params cost_params) {
+RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup,
+                            bool is_flat, const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params,
+                            const int itry, const Netlist<>& net_list, const ParentNetId& net_id) {
     /* Lock the route tree for writing. At least on Linux this shouldn't have an impact on single-threaded code */
     std::unique_lock<std::mutex> write_lock(_write_mutex);
 
     //Create a new subtree from the target in hptr to existing routing
     vtr::optional<RouteTreeNode&> start_of_new_subtree_rt_node, sink_rt_node;
-    std::tie(start_of_new_subtree_rt_node, sink_rt_node) = add_subtree_from_heap(hptr, target_net_pin_index, is_flat, router_lookahead, cost_params);
+    std::tie(start_of_new_subtree_rt_node, sink_rt_node) = add_subtree_from_heap(hptr, target_net_pin_index, is_flat,
+                                                                                 router_lookahead, cost_params, itry,
+                                                                                 net_list, net_id);
 
     if (!start_of_new_subtree_rt_node)
         return {vtr::nullopt, *sink_rt_node};
@@ -512,7 +519,9 @@ RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRoute
  * to the SINK indicated by hptr. Returns the first (most upstream) new rt_node,
  * and the rt_node of the new SINK. Traverses up from SINK  */
 std::tuple<vtr::optional<RouteTreeNode&>, vtr::optional<RouteTreeNode&>>
-RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat, RouterLookahead& router_lookahead, const t_conn_cost_params cost_params) {
+RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat,
+                                 const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params,
+                                 const int itry, const Netlist<>& net_list, const ParentNetId& net_id) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -546,33 +555,21 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
     }
     new_branch_iswitches.push_back(new_iswitch);
 
-    /** Verify router lookahead.
-     *
+    /*
+     * ROUTER LOOKAHEAD VERIFIER
      */
-     std::ofstream lookahead_verifier_csv("lookahead_verifier_info.csv", std::ios::app);
-
-    float total_path_cost = route_ctx.rr_node_route_inf[sink_inode].backward_path_cost;
-
-    for (int i = 1; i < new_branch_inodes.size(); ++i) {
-        auto current_node = route_ctx.rr_node_route_inf[new_branch_inodes[i]];
-        float current_backward_cost = current_node.backward_path_cost;
-
-        float djikstra_projection = total_path_cost - current_backward_cost;
-        float lookahead_projection = router_lookahead.get_expected_cost(new_branch_inodes[i], sink_inode, cost_params, 0.0); // TODO: assuming R_upstream is 0
-
-        float error = (lookahead_projection / djikstra_projection) - 1.0;
-
-        lookahead_verifier_csv << new_branch_inodes.back();         // source node
-        lookahead_verifier_csv << "," << new_branch_inodes.front(); // sink node
-        lookahead_verifier_csv << "," << new_branch_inodes[i];      // current node
-        lookahead_verifier_csv << "," << i;                         // num nodes from sink
-        lookahead_verifier_csv << "," << djikstra_projection;       // actual distance
-        lookahead_verifier_csv << "," << lookahead_projection;      // predicted distance
-        lookahead_verifier_csv << "," << error * 100;               // error
+    for (size_t i = 2; i < new_branch_inodes.size(); ++i) { /* Distance one node away is always 0.0 */
+        lookahead_profiler.record(itry,
+                                  target_net_pin_index,
+                                  new_branch_inodes.back(),
+                                  new_branch_inodes.front(),
+                                  new_branch_inodes[i],
+                                  i,
+                                  cost_params,
+                                  router_lookahead,
+                                  net_id,
+                                  net_list);
     }
-
-    lookahead_verifier_csv << std::endl;
-    lookahead_verifier_csv.close();
 
     /* Build the new tree branch starting from the existing node we found */
     RouteTreeNode* last_node = _rr_node_to_rt_node[new_inode];
@@ -608,13 +605,14 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
     // Expand (recursively) each of the main-branch nodes adding any
     // non-configurably connected nodes
     // Sink is not included, so no need to pass in the node's ipin value.
-    for (RRNodeId rr_node : main_branch_visited) {
+    for (RRNodeId rr_node: main_branch_visited) {
         add_non_configurable_nodes(_rr_node_to_rt_node.at(rr_node), false, all_visited, is_flat);
     }
 
     /* the first and last nodes we added.
      * vec[size-1] works, because new_branch_inodes is guaranteed to contain at least [sink, found_node] */
-    vtr::optional<RouteTreeNode&> downstream_rt_node = *_rr_node_to_rt_node.at(new_branch_inodes[new_branch_inodes.size() - 1]);
+    vtr::optional<RouteTreeNode&> downstream_rt_node = *_rr_node_to_rt_node.at(
+            new_branch_inodes[new_branch_inodes.size() - 1]);
     vtr::optional<RouteTreeNode&> sink_rt_node = *_rr_node_to_rt_node.at(new_branch_inodes[0]);
 
     return {downstream_rt_node, sink_rt_node};
@@ -637,7 +635,7 @@ void RouteTree::add_non_configurable_nodes(RouteTreeNode* rt_node,
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    for (int iedge : rr_graph.non_configurable_edges(rr_node)) {
+    for (int iedge: rr_graph.non_configurable_edges(rr_node)) {
         // Recursive case: expand children
         VTR_ASSERT(!rr_graph.edge_is_configurable(rr_node, iedge));
         RRNodeId to_rr_node = rr_graph.edge_sink_node(rr_node, iedge);
@@ -693,7 +691,8 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
  * Recursively traverse the route tree rooted at node and remove any congested subtrees.
  * Returns nullopt if pruned */
 vtr::optional<RouteTreeNode&>
-RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_prune, std::vector<int>* non_config_node_set_usage) {
+RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_prune,
+                   std::vector<int>* non_config_node_set_usage) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -718,7 +717,8 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
     // Recursively prune child nodes
     bool all_children_pruned = true;
     remove_child_if(rt_node, [&](auto& child) {
-        vtr::optional<RouteTreeNode&> child_maybe = prune_x(child, connections_inf, force_prune, non_config_node_set_usage);
+        vtr::optional<RouteTreeNode&> child_maybe = prune_x(child, connections_inf, force_prune,
+                                                            non_config_node_set_usage);
 
         if (child_maybe.has_value()) { // Not pruned
             all_children_pruned = false;
@@ -726,7 +726,8 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
         } else { // Pruned
             // After removing a child node, check if non_config_node_set_usage
             // needs an update.
-            if (non_config_node_set_usage != nullptr && node_set != -1 && rr_graph.rr_switch_inf(child.parent_switch).configurable()) {
+            if (non_config_node_set_usage != nullptr && node_set != -1 &&
+                rr_graph.rr_switch_inf(child.parent_switch).configurable()) {
                 (*non_config_node_set_usage)[node_set] -= 1;
                 VTR_ASSERT((*non_config_node_set_usage)[node_set] >= 0);
             }
@@ -804,7 +805,9 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
         //
         //  Then prune this node.
         //
-        if (non_config_node_set_usage != nullptr && node_set != -1 && rr_graph.rr_switch_inf(rt_node.parent_switch).configurable() && (*non_config_node_set_usage)[node_set] == 0) {
+        if (non_config_node_set_usage != nullptr && node_set != -1 &&
+            rr_graph.rr_switch_inf(rt_node.parent_switch).configurable() &&
+            (*non_config_node_set_usage)[node_set] == 0) {
             // This node should be pruned, re-prune edges once more.
             //
             // If the following is true:
@@ -891,7 +894,7 @@ std::vector<int> RouteTree::get_non_config_node_set_usage(void) const {
 
     const auto& rr_to_nonconf = device_ctx.rr_node_to_non_config_node_set;
 
-    for (auto& rt_node : all_nodes()) {
+    for (auto& rt_node: all_nodes()) {
         auto it = rr_to_nonconf.find(rt_node.inode);
         if (it == rr_to_nonconf.end())
             continue;
@@ -903,7 +906,7 @@ std::vector<int> RouteTree::get_non_config_node_set_usage(void) const {
             continue;
         }
 
-        for (auto& child : rt_node.child_nodes()) {
+        for (auto& child: rt_node.child_nodes()) {
             if (device_ctx.rr_graph.rr_switch_inf(child.parent_switch).configurable()) {
                 usage[it->second] += 1;
             }

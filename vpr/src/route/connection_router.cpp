@@ -31,27 +31,30 @@ static void update_router_stats(RouterStats* router_stats,
                                 RRNodeId rr_node_id,
                                 const RRGraphView* rr_graph);
 #else
+
 static void update_router_stats(RouterStats* router_stats,
                                 bool is_push,
                                 RRNodeId /*rr_node_id*/,
                                 const RRGraphView* /*rr_graph*/);
+
 #endif
 
 /** return tuple <found_path, retry_with_full_bb, cheapest> */
 template<typename Heap>
 std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree(
-    const RouteTreeNode& rt_root,
-    RRNodeId sink_node,
-    const t_conn_cost_params& cost_params,
-    const t_bb& bounding_box,
-    RouterStats& router_stats,
-    const ConnectionParameters& conn_params) {
+        const RouteTreeNode& rt_root,
+        RRNodeId sink_node,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
+        RouterStats& router_stats,
+        const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
 
     bool retry = false;
     t_heap* cheapest;
-    std::tie(retry, cheapest) = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
+    std::tie(retry, cheapest) = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params,
+                                                                            bounding_box);
 
     if (cheapest != nullptr) {
         rcv_path_manager.update_route_tree_set(cheapest->path_data);
@@ -72,10 +75,10 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
 /** Return <retry with full bb?, cheapest> */
 template<typename Heap>
 std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
-    const RouteTreeNode& rt_root,
-    RRNodeId sink_node,
-    const t_conn_cost_params& cost_params,
-    const t_bb& bounding_box) {
+        const RouteTreeNode& rt_root,
+        RRNodeId sink_node,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box) {
     //Re-add route nodes from the existing route tree to the heap.
     //They need to be repushed onto the heap since each node's cost is target specific.
 
@@ -85,7 +88,8 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
     RRNodeId source_node = rt_root.inode;
 
     if (heap_.is_empty_heap()) {
-        VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
+        VTR_LOG("No source in route tree: %s\n",
+                describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
         return std::make_tuple(false, nullptr);
     }
 
@@ -103,10 +107,10 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
         // If the bounding box is already max size, just fail
         if (bounding_box.xmin == 0
             && bounding_box.ymin == 0
-            && bounding_box.xmax == (int)(grid_.width() - 1)
-            && bounding_box.ymax == (int)(grid_.height() - 1)
+            && bounding_box.xmax == (int) (grid_.width() - 1)
+            && bounding_box.ymax == (int) (grid_.height() - 1)
             && bounding_box.layer_min == 0
-            && bounding_box.layer_max == (int)(grid_.get_num_layers() - 1)) {
+            && bounding_box.layer_max == (int) (grid_.get_num_layers() - 1)) {
             VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
             return std::make_tuple(false, nullptr);
         }
@@ -131,25 +135,27 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
 // Returns a  tuple of <found_path?, retry_with_full_bb?, cheapest> */
 template<typename Heap>
 std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree_high_fanout(
-    const RouteTreeNode& rt_root,
-    RRNodeId sink_node,
-    const t_conn_cost_params& cost_params,
-    const t_bb& net_bounding_box,
-    const SpatialRouteTreeLookup& spatial_rt_lookup,
-    RouterStats& router_stats,
-    const ConnectionParameters& conn_params) {
+        const RouteTreeNode& rt_root,
+        RRNodeId sink_node,
+        const t_conn_cost_params& cost_params,
+        const t_bb& net_bounding_box,
+        const SpatialRouteTreeLookup& spatial_rt_lookup,
+        RouterStats& router_stats,
+        const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, net_bounding_box);
+    t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup,
+                                                             net_bounding_box);
     heap_.build_heap();
 
     RRNodeId source_node = rt_root.inode;
 
     if (heap_.is_empty_heap()) {
-        VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
+        VTR_LOG("No source in route tree: %s\n",
+                describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
         return std::make_tuple(false, false, t_heap());
     }
 
@@ -166,7 +172,9 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
     if (cheapest == nullptr) {
         //Found no path, that may be due to an unlucky choice of existing route tree sub-set,
         //try again with the full route tree to be sure this is not an artifact of high-fanout routing
-        VTR_LOG_WARN("No routing path found in high-fanout mode for net connection (to sink_rr %d), retrying with full route tree\n", sink_node);
+        VTR_LOG_WARN(
+                "No routing path found in high-fanout mode for net connection (to sink_rr %d), retrying with full route tree\n",
+                sink_node);
 
         //Reset any previously recorded node costs so timing_driven_route_connection()
         //starts over from scratch.
@@ -235,9 +243,14 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
             // This is then placed into the traceback so that the correct path is returned
             // TODO: This can be eliminated by modifying the actual traceback function in route_timing
             if (rcv_path_manager.is_enabled()) {
-                rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost, route_ctx);
+                rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost,
+                                                                      cheapest->backward_path_cost,
+                                                                      cheapest->backward_path_delay,
+                                                                      cheapest->backward_path_congestion, route_ctx);
             }
-            VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
+            VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode,
+                           describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode,
+                                            is_flat_).c_str());
             break;
         }
 
@@ -268,11 +281,11 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
 // Find shortest paths from specified route tree to all nodes in the RR graph
 template<typename Heap>
 vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_paths_from_route_tree(
-    const RouteTreeNode& rt_root,
-    const t_conn_cost_params& cost_params,
-    const t_bb& bounding_box,
-    RouterStats& router_stats,
-    const ConnectionParameters& conn_params) {
+        const RouteTreeNode& rt_root,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
+        RouterStats& router_stats,
+        const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
 
@@ -296,8 +309,8 @@ vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_sho
 // no-operation lookahead which always returns zero.
 template<typename Heap>
 vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_paths_from_heap(
-    const t_conn_cost_params& cost_params,
-    const t_bb& bounding_box) {
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box) {
     vtr::vector<RRNodeId, t_heap> cheapest_paths(rr_nodes_.size());
 
     VTR_ASSERT_SAFE(heap_.is_valid());
@@ -331,10 +344,12 @@ vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_sho
                                       bounding_box);
 
         if (cheapest_paths[inode].index == RRNodeId::INVALID() || cheapest_paths[inode].cost >= cheapest->cost) {
-            VTR_LOGV_DEBUG(router_debug_, "  Better cost to node %d: %g (was %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
+            VTR_LOGV_DEBUG(router_debug_, "  Better cost to node %d: %g (was %g)\n", inode, cheapest->cost,
+                           cheapest_paths[inode].cost);
             cheapest_paths[inode] = *cheapest;
         } else {
-            VTR_LOGV_DEBUG(router_debug_, "  Worse cost to node %d: %g (better %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
+            VTR_LOGV_DEBUG(router_debug_, "  Worse cost to node %d: %g (better %g)\n", inode, cheapest->cost,
+                           cheapest_paths[inode].cost);
         }
 
         rcv_path_manager.free_path_struct(cheapest->path_data);
@@ -430,7 +445,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
     //  - directrf_stratixiv_arch_timing.blif
     //  - gsm_switch_stratixiv_arch_timing.blif
     //
-    for (RREdgeId from_edge : edges) {
+    for (RREdgeId from_edge: edges) {
         RRNodeId to_node = rr_nodes_.edge_sink_node(from_edge);
         rr_nodes_.prefetch_node(to_node);
 
@@ -438,7 +453,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
         VTR_PREFETCH(&rr_switch_inf_[switch_idx], 0, 0);
     }
 
-    for (RREdgeId from_edge : edges) {
+    for (RREdgeId from_edge: edges) {
         RRNodeId to_node = rr_nodes_.edge_sink_node(from_edge);
         timing_driven_expand_neighbour(current,
                                        from_node,
@@ -554,6 +569,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
     // Costs initialized to current
     next.cost = std::numeric_limits<float>::infinity(); //Not used directly
     next.backward_path_cost = current->backward_path_cost;
+    next.backward_path_delay = current->backward_path_delay;
+    next.backward_path_congestion = current->backward_path_congestion;
 
     // path_data variables are initialized to current values
     if (rcv_path_manager.is_enabled() && current->path_data) {
@@ -583,7 +600,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
                                         device_ctx.rr_indexed_data,
                                         to_node,
                                         is_flat_)
-                           .c_str());
+                               .c_str());
         VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g\n", new_total_cost, new_back_cost);
         //Add node to the heap only if the cost via the current partial path is less than the
         //best known cost, since there is no reason for the router to expand more expensive paths.
@@ -599,6 +616,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
         next_ptr->cost = next.cost;
         next_ptr->R_upstream = next.R_upstream;
         next_ptr->backward_path_cost = next.backward_path_cost;
+        next_ptr->backward_path_delay = next.backward_path_delay;
+        next_ptr->backward_path_congestion = next.backward_path_congestion;
         next_ptr->index = to_node;
         next_ptr->set_prev_edge(from_edge);
 
@@ -616,8 +635,11 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
                             rr_graph_);
 
     } else {
-        VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str());
-        VTR_LOGV_DEBUG(router_debug_, "        Prev Total Cost %g Prev back Cost %g \n", best_total_cost, best_back_cost);
+        VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node,
+                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node,
+                                        is_flat_).c_str());
+        VTR_LOGV_DEBUG(router_debug_, "        Prev Total Cost %g Prev back Cost %g \n", best_total_cost,
+                       best_back_cost);
         VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g \n", new_total_cost, new_back_cost);
     }
 
@@ -658,7 +680,8 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
     // TODO: This function is not tested for is_flat == true
     VTR_ASSERT(is_flat_ != true);
-    std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream);
+    std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(to_node, target_node,
+                                                                                            cost_params, R_upstream);
 
     float expected_total_delay_cost;
     float expected_total_cong_cost;
@@ -675,9 +698,11 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     constexpr float NORMALIZATION_CONSTANT = 100e-12;
 
     expected_total_delay_cost = expected_total_delay;
-    expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
+    expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) *
+                                 std::max(0.f, delay_budget->target_delay - expected_total_delay);
     // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / NORMALIZATION_CONSTANT;
-    expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / NORMALIZATION_CONSTANT;
+    expected_total_delay_cost +=
+            std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / NORMALIZATION_CONSTANT;
     expected_total_cong_cost = expected_total_cong;
 
     float total_cost = expected_total_delay_cost + expected_total_cong_cost;
@@ -779,13 +804,15 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     if (conn_params_->has_choking_spot_ && is_flat_ && rr_graph_->node_type(to_node) == IPIN) {
         auto find_res = conn_params_->connection_choking_spots_.find(to_node);
         if (find_res != conn_params_->connection_choking_spots_.end()) {
-            cong_cost = cong_cost / pow(2, (float)find_res->second);
+            cong_cost = cong_cost / pow(2, (float) find_res->second);
         }
     }
 
     //Update the backward cost (upstream already included)
     to->backward_path_cost += (1. - cost_params.criticality) * cong_cost; //Congestion cost
     to->backward_path_cost += cost_params.criticality * Tdel;             //Delay cost
+    to->backward_path_delay += Tdel;
+    to->backward_path_congestion += cong_cost;
 
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = rr_graph_->node_type(from_node);
@@ -799,9 +826,11 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
 
     if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
         to->path_data->backward_delay += cost_params.criticality * Tdel;
-        to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to_node, cost_params.pres_fac);
+        to->path_data->backward_cong +=
+                (1. - cost_params.criticality) * get_rr_cong_cost(to_node, cost_params.pres_fac);
 
-        total_cost = compute_node_cost_using_rcv(cost_params, to_node, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
+        total_cost = compute_node_cost_using_rcv(cost_params, to_node, target_node, to->path_data->backward_delay,
+                                                 to->path_data->backward_cong, to->R_upstream);
     } else {
         const auto& device_ctx = g_vpr_ctx.device();
         //Update total cost
@@ -812,9 +841,11 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
                        "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
                        rr_node_arch_name(to_node, is_flat_).c_str(),
-                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str(),
+                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node,
+                                        is_flat_).c_str(),
                        rr_node_arch_name(target_node, is_flat_).c_str(),
-                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, target_node, is_flat_).c_str(),
+                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, target_node,
+                                        is_flat_).c_str(),
                        expected_cost, to->R_upstream);
         total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
     }
@@ -834,6 +865,8 @@ void ConnectionRouter<Heap>::empty_heap_annotating_node_route_inf() {
 
         rr_node_route_inf_[tmp->index].path_cost = tmp->cost;
         rr_node_route_inf_[tmp->index].backward_path_cost = tmp->backward_path_cost;
+        rr_node_route_inf_[tmp->index].backward_path_delay = tmp->backward_path_delay;
+        rr_node_route_inf_[tmp->index].backward_path_congestion = tmp->backward_path_congestion;
         modified_rr_node_inf_.push_back(tmp->index);
 
         rcv_path_manager.free_path_struct(tmp->path_data);
@@ -845,10 +878,10 @@ void ConnectionRouter<Heap>::empty_heap_annotating_node_route_inf() {
 //used as branch-points for further routing.
 template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_to_heap(
-    const RouteTreeNode& rt_node,
-    RRNodeId target_node,
-    const t_conn_cost_params& cost_params,
-    const t_bb& net_bb) {
+        const RouteTreeNode& rt_node,
+        RRNodeId target_node,
+        const t_conn_cost_params& cost_params,
+        const t_bb& net_bb) {
     /* Puts the entire partial routing below and including rt_node onto the heap *
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
@@ -856,7 +889,9 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node.re_expand) {
-        if (target_node.is_valid() && !has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), RRNodeId(target_node), only_opin_inter_layer)) {
+        if (target_node.is_valid() &&
+            !has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), RRNodeId(target_node),
+                              only_opin_inter_layer)) {
             return;
         }
         add_route_tree_node_to_heap(rt_node,
@@ -865,7 +900,7 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
                                     net_bb);
     }
 
-    for (const RouteTreeNode& child_node : rt_node.child_nodes()) {
+    for (const RouteTreeNode& child_node: rt_node.child_nodes()) {
         if (is_flat_) {
             if (relevant_node_to_target(rr_graph_,
                                         child_node.inode,
@@ -890,13 +925,15 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
 //responsibility.
 template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
-    const RouteTreeNode& rt_node,
-    RRNodeId target_node,
-    const t_conn_cost_params& cost_params,
-    const t_bb& net_bb) {
+        const RouteTreeNode& rt_node,
+        RRNodeId target_node,
+        const t_conn_cost_params& cost_params,
+        const t_bb& net_bb) {
     const auto& device_ctx = g_vpr_ctx.device();
     const RRNodeId inode = rt_node.inode;
     float backward_path_cost = cost_params.criticality * rt_node.Tdel;
+    float backward_path_delay = rt_node.Tdel;
+    float backward_path_congestion = 0.0;
     float R_upstream = rt_node.R_upstream;
 
     /* Don't push to heap if not in bounding box: no-op for serial router, important for parallel router */
@@ -913,20 +950,22 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
         float tot_cost = backward_path_cost
                          + cost_params.astar_fac
-                               * router_lookahead_.get_expected_cost(inode,
-                                                                     target_node,
-                                                                     cost_params,
-                                                                     R_upstream);
+                           * router_lookahead_.get_expected_cost(inode,
+                                                                 target_node,
+                                                                 cost_params,
+                                                                 R_upstream);
         VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n",
                        inode,
                        tot_cost,
-                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
+                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode,
+                                        is_flat_).c_str());
 
         push_back_node(&heap_, rr_node_route_inf_,
                        inode, tot_cost, RREdgeId::INVALID(),
-                       backward_path_cost, R_upstream);
+                       backward_path_cost, backward_path_delay, backward_path_congestion, R_upstream);
     } else {
-        float expected_total_cost = compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0, R_upstream);
+        float expected_total_cost = compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0,
+                                                                R_upstream);
 
         push_back_node_with_info(&heap_, inode, expected_total_cost,
                                  backward_path_cost, R_upstream, rt_node.Tdel, &rcv_path_manager);
@@ -966,11 +1005,11 @@ inline void adjust_highfanout_bounding_box(t_bb& bb, const t_bb& net_bb) {
 
 template<typename Heap>
 t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
-    const RouteTreeNode& rt_root,
-    RRNodeId target_node,
-    const t_conn_cost_params& cost_params,
-    const SpatialRouteTreeLookup& spatial_rt_lookup,
-    const t_bb& net_bounding_box) {
+        const RouteTreeNode& rt_root,
+        RRNodeId target_node,
+        const t_conn_cost_params& cost_params,
+        const SpatialRouteTreeLookup& spatial_rt_lookup,
+        const t_bb& net_bounding_box) {
     //For high fanout nets we only add those route tree nodes which are spatially close
     //to the sink.
     //
@@ -1000,17 +1039,17 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
     bool done = false;
-    for (int dx : {0, -1, +1}) {
+    for (int dx: {0, -1, +1}) {
         size_t bin_x = target_bin_x + dx;
 
         if (bin_x > spatial_rt_lookup.dim_size(0) - 1) continue; //Out of range
 
-        for (int dy : {0, -1, +1}) {
+        for (int dy: {0, -1, +1}) {
             size_t bin_y = target_bin_y + dy;
 
             if (bin_y > spatial_rt_lookup.dim_size(1) - 1) continue; //Out of range
 
-            for (const RouteTreeNode& rt_node : spatial_rt_lookup[bin_x][bin_y]) {
+            for (const RouteTreeNode& rt_node: spatial_rt_lookup[bin_x][bin_y]) {
                 if (!rt_node.re_expand) // Some nodes (like IPINs) shouldn't be re-expanded
                     continue;
                 RRNodeId rr_node_to_add = rt_node.inode;
@@ -1025,7 +1064,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 if (!inside_bb(rr_node_to_add, net_bounding_box))
                     continue;
 
-                if (!has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), target_node, only_opin_inter_layer)) {
+                if (!has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), target_node,
+                                      only_opin_inter_layer)) {
                     continue;
                 }
                 // Put the node onto the heap
@@ -1035,7 +1075,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 expand_highfanout_bounding_box(highfanout_bb, net_bounding_box, rr_node_to_add, rr_graph_);
 
                 if (is_flat_) {
-                    if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
+                    if (rr_graph_->node_type(rr_node_to_add) == CHANY ||
+                        rr_graph_->node_type(rr_node_to_add) == CHANX) {
                         chan_nodes_added++;
                     }
                 } else {
@@ -1076,15 +1117,17 @@ static inline bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
                                     bool is_inter_layer_opin_connection) {
     int sink_layer = rr_graph->node_layer(sink_node);
 
-    if (rr_graph->node_layer(from_node) == sink_layer || rr_graph->node_type(from_node) == SOURCE || !is_inter_layer_opin_connection) {
+    if (rr_graph->node_layer(from_node) == sink_layer || rr_graph->node_type(from_node) == SOURCE ||
+        !is_inter_layer_opin_connection) {
         return true;
-    } else if (rr_graph->node_type(from_node) == CHANX || rr_graph->node_type(from_node) == CHANY || rr_graph->node_type(from_node) == IPIN) {
+    } else if (rr_graph->node_type(from_node) == CHANX || rr_graph->node_type(from_node) == CHANY ||
+               rr_graph->node_type(from_node) == IPIN) {
         return false;
     } else {
         VTR_ASSERT(rr_graph->node_type(from_node) == OPIN && is_inter_layer_opin_connection);
         auto edges = rr_nodes.edge_range(from_node);
 
-        for (RREdgeId from_edge : edges) {
+        for (RREdgeId from_edge: edges) {
             RRNodeId to_node = rr_nodes.edge_sink_node(from_edge);
             if (rr_graph->node_layer(to_node) == sink_layer) {
                 return true;
@@ -1099,7 +1142,8 @@ static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
                                            RRNodeId target_node) {
     VTR_ASSERT(rr_graph->node_type(target_node) == t_rr_type::SINK);
     auto node_to_add_type = rr_graph->node_type(node_to_add);
-    if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY || node_to_add_type == SINK) {
+    if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE ||
+        node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY || node_to_add_type == SINK) {
         return true;
     } else if (node_in_same_physical_tile(node_to_add, target_node)) {
         VTR_ASSERT(node_to_add_type == IPIN);
@@ -1114,6 +1158,7 @@ static inline void update_router_stats(RouterStats* router_stats,
                                        RRNodeId rr_node_id,
                                        const RRGraphView* rr_graph) {
 #else
+
 static inline void update_router_stats(RouterStats* router_stats,
                                        bool is_push,
                                        RRNodeId /*rr_node_id*/,
@@ -1167,26 +1212,31 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type he
     switch (heap_type) {
         case e_heap_type::BINARY_HEAP:
             return std::make_unique<ConnectionRouter<BinaryHeap>>(
-                grid,
-                router_lookahead,
-                rr_nodes,
-                rr_graph,
-                rr_rc_data,
-                rr_switch_inf,
-                rr_node_route_inf,
-                is_flat);
+                    grid,
+                    router_lookahead,
+                    rr_nodes,
+                    rr_graph,
+                    rr_rc_data,
+                    rr_switch_inf,
+                    rr_node_route_inf,
+                    is_flat);
         case e_heap_type::BUCKET_HEAP_APPROXIMATION:
             return std::make_unique<ConnectionRouter<Bucket>>(
-                grid,
-                router_lookahead,
-                rr_nodes,
-                rr_graph,
-                rr_rc_data,
-                rr_switch_inf,
-                rr_node_route_inf,
-                is_flat);
+                    grid,
+                    router_lookahead,
+                    rr_nodes,
+                    rr_graph,
+                    rr_rc_data,
+                    rr_switch_inf,
+                    rr_node_route_inf,
+                    is_flat);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap_type %d",
                             heap_type);
     }
+}
+
+template<typename Heap>
+const RouterLookahead& ConnectionRouter<Heap>::get_router_lookahead() {
+    return router_lookahead_;
 }

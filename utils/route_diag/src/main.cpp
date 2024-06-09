@@ -63,7 +63,7 @@ static void do_one_route(const Netlist<>& net_list,
                          RRNodeId source_node,
                          RRNodeId sink_node,
                          const t_router_opts& router_opts,
-                         const std::vector<t_segment_inf>& segment_inf,
+                         const std::vector <t_segment_inf>& segment_inf,
                          bool is_flat) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -120,17 +120,20 @@ static void do_one_route(const Netlist<>& net_list,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
     std::tie(found_path, std::ignore, cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
-                                                                                                    sink_node,
-                                                                                                    cost_params,
-                                                                                                    bounding_box,
-                                                                                                    router_stats,
-                                                                                                    conn_params);
+                                                                                                        sink_node,
+                                                                                                        cost_params,
+                                                                                                        bounding_box,
+                                                                                                        router_stats,
+                                                                                                        conn_params);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
         vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, router_opts.flat_routing);
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr,
+                                                                       router_opts.flat_routing,
+                                                                       router.get_router_lookahead(), cost_params, 1,
+                                                                       net_list, conn_params.net_id_,);
 
         //find delay
         float net_delay = rt_node_of_sink.value().Tdel;
@@ -139,7 +142,9 @@ static void do_one_route(const Netlist<>& net_list,
         tree.print();
         VTR_LOG("\n");
 
-        VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode), "SOURCE should never be congested");
+        VTR_ASSERT_MSG(
+                route_ctx.rr_node_route_inf[tree.root().inode].occ() <= rr_graph.node_capacity(tree.root().inode),
+                "SOURCE should never be congested");
     } else {
         VTR_LOG("Routing failed");
     }
@@ -152,7 +157,7 @@ static void profile_source(const Netlist<>& net_list,
                            const t_det_routing_arch& det_routing_arch,
                            RRNodeId source_rr_node,
                            const t_router_opts& router_opts,
-                           const std::vector<t_segment_inf>& segment_inf,
+                           const std::vector <t_segment_inf>& segment_inf,
                            bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Profiling source");
     const auto& device_ctx = g_vpr_ctx.device();
@@ -175,19 +180,19 @@ static void profile_source(const Netlist<>& net_list,
     int end_y = grid.height() - 1;
 
     vtr::Matrix<float> delays({grid.width(), grid.height()},
-            std::numeric_limits<float>::infinity());
+                              std::numeric_limits<float>::infinity());
     vtr::Matrix<int> sink_nodes({grid.width(), grid.height()}, OPEN);
 
     for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
         for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
-            if(device_ctx.grid.get_physical_type({sink_x, sink_y, layer_num}) == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
+            if (device_ctx.grid.get_physical_type({sink_x, sink_y, layer_num}) == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 continue;
             }
 
             auto best_sink_ptcs = get_best_classes(RECEIVER,
                                                    device_ctx.grid.get_physical_type({sink_x, sink_y, layer_num}));
             bool successfully_routed;
-            for (int sink_ptc : best_sink_ptcs) {
+            for (int sink_ptc: best_sink_ptcs) {
                 VTR_ASSERT(sink_ptc != OPEN);
 
                 //TODO: should pass layer_num instead of 0 to node_lookup once the multi-die FPGAs support is completed
@@ -202,8 +207,8 @@ static void profile_source(const Netlist<>& net_list,
 
                 {
                     vtr::ScopedStartFinishTimer delay_timer(vtr::string_fmt(
-                        "Routing Src: %d Sink: %d", source_rr_node,
-                        sink_rr_node));
+                            "Routing Src: %d Sink: %d", source_rr_node,
+                            sink_rr_node));
 
                     successfully_routed = profiler.calculate_delay(RRNodeId(source_rr_node),
                                                                    RRNodeId(sink_rr_node),
@@ -221,8 +226,8 @@ static void profile_source(const Netlist<>& net_list,
     }
 
     VTR_LOG("Delay matrix from source_rr_node: %d\n", source_rr_node);
-    for(size_t iy = 0; iy < delays.dim_size(1); ++iy) {
-        for(size_t ix = 0; ix < delays.dim_size(0); ++ix) {
+    for (size_t iy = 0; iy < delays.dim_size(1); ++iy) {
+        for (size_t ix = 0; ix < delays.dim_size(0); ++ix) {
             VTR_LOG("%g,", delays[ix][iy]);
         }
         VTR_LOG("\n");
@@ -230,8 +235,8 @@ static void profile_source(const Netlist<>& net_list,
     VTR_LOG("\n");
 
     VTR_LOG("Sink matrix used for delay matrix:\n");
-    for(size_t iy = 0; iy < sink_nodes.dim_size(1); ++iy) {
-        for(size_t ix = 0; ix < sink_nodes.dim_size(0); ++ix) {
+    for (size_t iy = 0; iy < sink_nodes.dim_size(1); ++iy) {
+        for (size_t ix = 0; ix < sink_nodes.dim_size(0); ++ix) {
             VTR_LOG("%d,", sink_nodes[ix][iy]);
         }
         VTR_LOG("\n");
@@ -240,7 +245,7 @@ static void profile_source(const Netlist<>& net_list,
 }
 
 static t_chan_width setup_chan_width(t_router_opts router_opts,
-        t_chan_width_dist chan_width_dist) {
+                                     t_chan_width_dist chan_width_dist) {
     /*we give plenty of tracks, this increases routability for the */
     /*lookup table generation */
 
@@ -276,16 +281,16 @@ t_route_util_options read_route_util_options(int argc, const char** argv) {
 
     auto& route_diag_grp = parser.add_argument_group("route diagnostic options");
     route_diag_grp.add_argument(args.sink_rr_node, "--sink_rr_node")
-        .help("Sink RR node to route for route_diag.")
-        .show_in(argparse::ShowIn::HELP_ONLY);
+            .help("Sink RR node to route for route_diag.")
+            .show_in(argparse::ShowIn::HELP_ONLY);
     route_diag_grp.add_argument(args.source_rr_node, "--source_rr_node")
-        .help("Source RR node to route for route_diag.")
-        .show_in(argparse::ShowIn::HELP_ONLY);
+            .help("Source RR node to route for route_diag.")
+            .show_in(argparse::ShowIn::HELP_ONLY);
     route_diag_grp.add_argument(args.profile_source, "--profile_source")
-        .help(
-            "Profile routes from source to IPINs at all locations."
-            "This is similiar to the placer delay matrix construction.")
-        .show_in(argparse::ShowIn::HELP_ONLY);
+            .help(
+                    "Profile routes from source to IPINs at all locations."
+                    "This is similiar to the placer delay matrix construction.")
+            .show_in(argparse::ShowIn::HELP_ONLY);
 
     parser.parse_args(argc, argv);
 
@@ -296,7 +301,7 @@ t_route_util_options read_route_util_options(int argc, const char** argv) {
     return args;
 }
 
-int main(int argc, const char **argv) {
+int main(int argc, const char** argv) {
     t_options Options = t_options();
     t_arch Arch = t_arch();
     t_vpr_setup vpr_setup = t_vpr_setup();
@@ -321,23 +326,23 @@ int main(int argc, const char **argv) {
 
         bool is_flat = vpr_setup.RouterOpts.flat_routing;
 
-        const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist :
-                                            (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+        const Netlist<>& net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
+                                    (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
 
         t_chan_width chan_width = setup_chan_width(
                 vpr_setup.RouterOpts,
                 Arch.Chans);
 
         alloc_routing_structs(
-            chan_width,
-            vpr_setup.RouterOpts,
-            &vpr_setup.RoutingArch,
-            vpr_setup.Segments,
-            Arch.Directs,
-            Arch.num_directs,
-            is_flat);
+                chan_width,
+                vpr_setup.RouterOpts,
+                &vpr_setup.RoutingArch,
+                vpr_setup.Segments,
+                Arch.Directs,
+                Arch.num_directs,
+                is_flat);
 
-        if(route_options.profile_source) {
+        if (route_options.profile_source) {
             profile_source(net_list,
                            vpr_setup.RoutingArch,
                            RRNodeId(route_options.source_rr_node),
@@ -373,7 +378,8 @@ int main(int argc, const char **argv) {
         }
 
     } catch (const vtr::VtrError& vtr_error) {
-        vtr::printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
+        vtr::printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(),
+                          vtr_error.what());
 
         return ERROR_EXIT_CODE;
     }

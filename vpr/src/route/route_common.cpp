@@ -43,7 +43,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                                                                              bool is_flat);
 
 static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
-                  vtr::vector<ParentNetId, std::vector<int>>>
+        vtr::vector<ParentNetId, std::vector<int>>>
 load_net_terminal_groups(const RRGraphView& rr_graph,
                          const Netlist<>& net_list,
                          const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
@@ -60,7 +60,8 @@ static void adjust_one_rr_occ_and_acc_cost(RRNodeId inode, int add_or_sub, float
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
                                                            bool is_flat);
 
-static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
+static bool
+classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
 
 /************************** Subroutine definitions ***************************/
 
@@ -100,11 +101,11 @@ void get_serial_num(const Netlist<>& net_list) {
 
     serial_num = 0;
 
-    for (auto net_id : net_list.nets()) {
+    for (auto net_id: net_list.nets()) {
         if (!route_ctx.route_trees[net_id])
             continue;
 
-        for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+        for (auto& rt_node: route_ctx.route_trees[net_id].value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
             serial_num += (size_t(net_id) + 1)
                           * (rr_graph.node_xlow(inode) * (device_ctx.grid.width()) - rr_graph.node_yhigh(inode));
@@ -123,7 +124,7 @@ bool feasible_routing() {
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
-    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+    for (const RRNodeId& rr_id: rr_graph.nodes()) {
         if (route_ctx.rr_node_route_inf[rr_id].occ() > rr_graph.node_capacity(rr_id)) {
             return (false);
         }
@@ -139,7 +140,7 @@ std::vector<RRNodeId> collect_congested_rr_nodes() {
     auto& route_ctx = g_vpr_ctx.routing();
 
     std::vector<RRNodeId> congested_rr_nodes;
-    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId inode: device_ctx.rr_graph.nodes()) {
         short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = rr_graph.node_capacity(inode);
 
@@ -159,10 +160,10 @@ vtr::vector<RRNodeId, std::set<ClusterNetId>> collect_rr_node_nets() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     vtr::vector<RRNodeId, std::set<ClusterNetId>> rr_node_nets(device_ctx.rr_graph.num_nodes());
-    for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
+    for (ClusterNetId inet: cluster_ctx.clb_nlist.nets()) {
         if (!route_ctx.route_trees[inet])
             continue;
-        for (auto& rt_node : route_ctx.route_trees[inet].value().all_nodes()) {
+        for (auto& rt_node: route_ctx.route_trees[inet].value().all_nodes()) {
             rr_node_nets[rt_node.inode].insert(inet);
         }
     }
@@ -238,7 +239,7 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
 /** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */
 void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_or_sub) {
     pathfinder_update_single_node_occupancy(root.inode, add_or_sub);
-    for (auto& node : root.all_nodes()) {
+    for (auto& node: root.all_nodes()) {
         pathfinder_update_single_node_occupancy(node.inode, add_or_sub);
     }
 }
@@ -271,10 +272,11 @@ void init_route_structs(const Netlist<>& net_list,
     route_ctx.net_status.resize(net_list.nets().size());
 
     if (has_choking_point && is_flat) {
-        std::tie(route_ctx.net_terminal_groups, route_ctx.net_terminal_group_num) = load_net_terminal_groups(device_ctx.rr_graph,
-                                                                                                             net_list,
-                                                                                                             route_ctx.net_rr_terminals,
-                                                                                                             is_flat);
+        std::tie(route_ctx.net_terminal_groups, route_ctx.net_terminal_group_num) = load_net_terminal_groups(
+                device_ctx.rr_graph,
+                net_list,
+                route_ctx.net_rr_terminals,
+                is_flat);
     }
 }
 
@@ -283,9 +285,11 @@ void init_route_structs(const Netlist<>& net_list,
 void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    for (auto node : visited_rr_nodes) {
+    for (auto node: visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
+        route_ctx.rr_node_route_inf[node].backward_path_delay = std::numeric_limits<float>::infinity();
+        route_ctx.rr_node_route_inf[node].backward_path_congestion = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
     }
 }
@@ -302,7 +306,7 @@ float get_rr_cong_cost(RRNodeId inode, float pres_fac) {
         // Access unordered_map only when the node is part of a non-configurable set
         auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
         if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-            for (RRNodeId node : device_ctx.rr_non_config_node_sets[itr->second]) {
+            for (RRNodeId node: device_ctx.rr_non_config_node_sets[itr->second]) {
                 if (node == inode) {
                     continue; //Already included above
                 }
@@ -337,13 +341,13 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
     clb_opins_used_locally.resize(cluster_ctx.clb_nlist.blocks().size());
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (auto blk_id: cluster_ctx.clb_nlist.blocks()) {
         auto type = physical_tile_type(blk_id);
         auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
 
         auto class_range = get_class_range_for_block(blk_id);
 
-        clb_opins_used_locally[blk_id].resize((int)type->class_inf.size());
+        clb_opins_used_locally[blk_id].resize((int) type->class_inf.size());
 
         if (is_io_type(type)) continue;
 
@@ -402,7 +406,7 @@ void alloc_and_load_rr_node_route_structs() {
 
     reset_rr_node_route_structs();
 
-    for (auto i : device_ctx.rr_node_to_non_config_node_set) {
+    for (auto i: device_ctx.rr_node_to_non_config_node_set) {
         route_ctx.non_configurable_bitset.set(i.first, true);
     }
 }
@@ -416,13 +420,15 @@ void reset_rr_node_route_structs() {
 
     VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_graph.num_nodes()));
 
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId& rr_id: device_ctx.rr_graph.nodes()) {
         auto& node_inf = route_ctx.rr_node_route_inf[rr_id];
 
         node_inf.prev_edge = RREdgeId::INVALID();
         node_inf.acc_cost = 1.0;
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
+        node_inf.backward_path_congestion = std::numeric_limits<float>::infinity();
+        node_inf.backward_path_delay = std::numeric_limits<float>::infinity();
         node_inf.set_occ(0);
     }
 }
@@ -437,11 +443,11 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
 
     net_rr_terminals.resize(net_list.nets().size());
 
-    for (auto net_id : net_list.nets()) {
+    for (auto net_id: net_list.nets()) {
         net_rr_terminals[net_id].resize(net_list.net_pins(net_id).size());
 
         int pin_count = 0;
-        for (auto pin_id : net_list.net_pins(net_id)) {
+        for (auto pin_id: net_list.net_pins(net_id)) {
             auto block_id = net_list.pin_block(pin_id);
 
             t_block_loc blk_loc;
@@ -450,7 +456,8 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
             RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
                                                               blk_loc.loc.x,
                                                               blk_loc.loc.y,
-                                                              (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
+                                                              (pin_count == 0 ? SOURCE
+                                                                              : SINK), /* First pin is driver */
                                                               iclass);
             VTR_ASSERT(inode != RRNodeId::INVALID());
             net_rr_terminals[net_id][pin_count] = inode;
@@ -462,7 +469,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
 }
 
 static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
-                  vtr::vector<ParentNetId, std::vector<int>>>
+        vtr::vector<ParentNetId, std::vector<int>>>
 load_net_terminal_groups(const RRGraphView& rr_graph,
                          const Netlist<>& net_list,
                          const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
@@ -473,13 +480,13 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
     net_terminal_groups.resize(net_list.nets().size());
     net_terminal_group_num.resize(net_list.nets().size());
 
-    for (auto net_id : net_list.nets()) {
+    for (auto net_id: net_list.nets()) {
         net_terminal_groups[net_id].reserve(net_list.net_pins(net_id).size());
         net_terminal_group_num[net_id].resize(net_list.net_pins(net_id).size(), -1);
         std::vector<ParentBlockId> net_pin_blk_id(net_list.net_pins(net_id).size(), ParentBlockId::INVALID());
         std::unordered_map<RRNodeId, int> rr_node_pin_num;
         int pin_count = 0;
-        for (auto pin_id : net_list.net_pins(net_id)) {
+        for (auto pin_id: net_list.net_pins(net_id)) {
             if (pin_count == 0) {
                 pin_count++;
                 continue;
@@ -492,7 +499,7 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
             t_block_loc blk_loc;
             blk_loc = get_block_loc(block_id, is_flat);
             int group_num = -1;
-            for (int curr_grp_num = 0; curr_grp_num < (int)net_terminal_groups[net_id].size(); curr_grp_num++) {
+            for (int curr_grp_num = 0; curr_grp_num < (int) net_terminal_groups[net_id].size(); curr_grp_num++) {
                 const auto& curr_grp = net_terminal_groups[net_id][curr_grp_num];
                 auto group_loc = get_block_loc(net_pin_blk_id[rr_node_pin_num.at(RRNodeId(curr_grp[0]))], is_flat);
                 if (blk_loc.loc == group_loc.loc) {
@@ -541,7 +548,7 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
 
     rr_blk_source.resize(net_list.blocks().size());
 
-    for (auto blk_id : net_list.blocks()) {
+    for (auto blk_id: net_list.blocks()) {
         auto type = physical_tile_type(blk_id, is_flat);
         auto class_range = get_class_range_for_block(blk_id, is_flat);
         int num_tile_class = get_tile_class_max_ptc(type, is_flat);
@@ -581,7 +588,7 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
     std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.nlist);
 
     is_clock_net.resize(net_list.nets().size());
-    for (auto net_id : net_list.nets()) {
+    for (auto net_id: net_list.nets()) {
         std::size_t net_id_num = std::size_t(net_id);
         if (is_flat) {
             AtomNetId atom_net_id = AtomNetId(net_id_num);
@@ -595,7 +602,8 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
     return is_clock_net;
 }
 
-static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat) {
+static bool
+classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat) {
     t_physical_tile_type_ptr physical_tile = physical_tile_type(blk_id, is_flat);
     return classes_in_same_block(physical_tile, first_class_ptc_num, second_class_ptc_num, is_flat);
 }
@@ -619,7 +627,7 @@ vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
 
     auto nets = net_list.nets();
     route_bb.resize(nets.size());
-    for (auto net_id : nets) {
+    for (auto net_id: nets) {
         if (!route_ctx.is_clock_net[net_id]) {
             route_bb[net_id] = load_net_route_bb(net_list,
                                                  net_id,
@@ -749,7 +757,8 @@ void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf
 //
 // To model this we 'reserve' these locally used outputs, ensuring that the router will not use them (as if it did
 // this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
-void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat) {
+void
+reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat) {
     VTR_ASSERT(is_flat == false);
     int num_local_opin, iconn, num_edges;
     int iclass, ipin;
@@ -763,9 +772,9 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     const auto& rr_graph = device_ctx.rr_graph;
 
     if (rip_up_local_opins) {
-        for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        for (auto blk_id: cluster_ctx.clb_nlist.blocks()) {
             type = physical_tile_type(blk_id);
-            for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
+            for (iclass = 0; iclass < (int) type->class_inf.size(); iclass++) {
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
                 if (num_local_opin == 0) continue;
@@ -785,9 +794,9 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     // Make sure heap is empty before we add nodes to the heap.
     heap->empty_heap();
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (auto blk_id: cluster_ctx.clb_nlist.blocks()) {
         type = physical_tile_type(blk_id);
-        for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
+        for (iclass = 0; iclass < (int) type->class_inf.size(); iclass++) {
             num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
             if (num_local_opin == 0) continue;
@@ -800,7 +809,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             //congestion cost are popped-off/reserved first. (Intuitively, we want
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
-            RRNodeId from_node = route_ctx.rr_blk_source[(const ParentBlockId&)blk_id][iclass];
+            RRNodeId from_node = route_ctx.rr_blk_source[(const ParentBlockId&) blk_id][iclass];
             num_edges = rr_graph.num_edges(RRNodeId(from_node));
             for (iconn = 0; iconn < num_edges; iconn++) {
                 RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iconn);
@@ -811,7 +820,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 cost = get_rr_cong_cost(to_node, pres_fac);
                 add_node_to_heap(heap, route_ctx.rr_node_route_inf,
                                  to_node, cost, RREdgeId::INVALID(),
-                                 0., 0.);
+                                 0., 0., 0., 0.);
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {
@@ -861,16 +870,16 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
     //Build a look-up of nets using each RR node
     std::multimap<RRNodeId, ParentNetId> rr_node_nets;
 
-    for (auto net_id : net_list.nets()) {
+    for (auto net_id: net_list.nets()) {
         if (!route_ctx.route_trees[net_id])
             continue;
 
-        for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+        for (auto& rt_node: route_ctx.route_trees[net_id].value().all_nodes()) {
             rr_node_nets.emplace(size_t(rt_node.inode), net_id);
         }
     }
 
-    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId inode: device_ctx.rr_graph.nodes()) {
         int node_x, node_y;
         node_x = rr_graph.node_xlow(inode);
         node_y = rr_graph.node_ylow(inode);
@@ -878,20 +887,23 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int cap = rr_graph.node_capacity(inode);
         if (occ > cap) {
-            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str(), occ, cap);
+            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n",
+                    describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str(),
+                    occ, cap);
 
             auto range = rr_node_nets.equal_range(inode);
             for (auto itr = range.first; itr != range.second; ++itr) {
                 auto net_id = itr->second;
                 VTR_LOG("    Used by net %s (%zu)\n", net_list.net_name(net_id).c_str(), size_t(net_id));
-                for (auto pin : net_list.net_pins(net_id)) {
+                for (auto pin: net_list.net_pins(net_id)) {
                     t_block_loc blk_loc;
                     auto blk = net_list.pin_block(pin);
                     blk_loc = get_block_loc(blk, is_flat);
                     if (blk_loc.loc.x == node_x && blk_loc.loc.y == node_y) {
                         VTR_LOG("      Is in the same cluster: %s \n", describe_rr_node(rr_graph, device_ctx.grid,
-                                                                                        device_ctx.rr_indexed_data, itr->first, is_flat)
-                                                                           .c_str());
+                                                                                        device_ctx.rr_indexed_data,
+                                                                                        itr->first, is_flat)
+                                .c_str());
                     }
                 }
             }
@@ -910,9 +922,10 @@ void print_rr_node_route_inf() {
             RRNodeId prev_node = rr_graph.edge_src_node(prev_edge);
             auto switch_id = rr_graph.rr_nodes().edge_switch(prev_edge);
             VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
-                    inode, prev_node, (size_t)prev_edge);
+                    inode, prev_node, (size_t) prev_edge);
 
-            if (prev_node.is_valid() && bool(prev_edge) && !rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable()) {
+            if (prev_node.is_valid() && bool(prev_edge) &&
+                !rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable()) {
                 VTR_LOG("*");
             }
 
@@ -963,12 +976,14 @@ void print_rr_node_route_inf_dot() {
 std::string describe_unrouteable_connection(RRNodeId source_node, RRNodeId sink_node, bool is_flat) {
     const auto& device_ctx = g_vpr_ctx.device();
     std::string msg = vtr::string_fmt(
-        "Cannot route from %s (%s) to "
-        "%s (%s) -- no possible path",
-        rr_node_arch_name(source_node, is_flat).c_str(),
-        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, source_node, is_flat).c_str(),
-        rr_node_arch_name(sink_node, is_flat).c_str(),
-        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
+            "Cannot route from %s (%s) to "
+            "%s (%s) -- no possible path",
+            rr_node_arch_name(source_node, is_flat).c_str(),
+            describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, source_node,
+                             is_flat).c_str(),
+            rr_node_arch_name(sink_node, is_flat).c_str(),
+            describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node,
+                             is_flat).c_str());
 
     return msg;
 }

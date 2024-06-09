@@ -9,6 +9,7 @@
 #include "vpr_types.h"
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
+#include "router_lookahead.h"
 
 //Delay budget information for a specific connection
 struct t_conn_delay_budget {
@@ -111,6 +112,9 @@ class ConnectionRouterInterface {
     //
     // Ensure route budgets have been calculated before enabling this
     virtual void set_rcv_enabled(bool enable) = 0;
+
+    // Get router lookahead
+    virtual const RouterLookahead& get_router_lookahead() = 0;
 };
 
 #endif /* _CONNECTION_ROUTER_INTERFACE_H */

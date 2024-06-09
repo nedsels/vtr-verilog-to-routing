@@ -8,7 +8,7 @@
 #include <vector>
 
 class RouterDelayProfiler {
-  public:
+public:
     RouterDelayProfiler(const Netlist<>& net_list,
                         const RouterLookahead* lookahead,
                         bool is_flat);
@@ -42,7 +42,10 @@ class RouterDelayProfiler {
      */
     float get_min_delay(int physical_tile_type_idx, int from_layer, int to_layer, int dx, int dy) const;
 
-  private:
+    // Get Netlist
+    const Netlist<>& get_net_list();
+
+private:
     const Netlist<>& net_list_;
     RouterStats router_stats_;
     ConnectionRouter<BinaryHeap> router_;
@@ -52,7 +55,8 @@ class RouterDelayProfiler {
 
 vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src_rr_node,
                                                                     const t_router_opts& router_opts,
-                                                                    bool is_flat);
+                                                                    bool is_flat,
+                                                                    const Netlist<>& net_list);
 
 void alloc_routing_structs(t_chan_width chan_width,
                            const t_router_opts& router_opts,

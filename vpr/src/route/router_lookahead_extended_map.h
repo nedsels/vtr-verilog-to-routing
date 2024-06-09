@@ -71,6 +71,11 @@ class ExtendedMapLookahead : public RouterLookahead {
      */
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId inode, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
+    /*
+     * FOR ROUTER LOOKAHEAD VERIFIER
+     */
+    std::pair<float, float> get_expected_delay_and_cong_ignore_criticality(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
+
     /**
      * @brief Computes the extended lookahead map
      */

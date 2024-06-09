@@ -7,8 +7,7 @@
 #include "vpr_types.h"
 
 HeapStorage::HeapStorage()
-    : heap_free_head_(nullptr)
-    , num_heap_allocated_(0) {}
+        : heap_free_head_(nullptr), num_heap_allocated_(0) {}
 
 t_heap*
 HeapStorage::alloc() {
@@ -26,6 +25,8 @@ HeapStorage::alloc() {
     temp_ptr->set_next_heap_item(nullptr);
     temp_ptr->cost = 0.;
     temp_ptr->backward_path_cost = 0.;
+    temp_ptr->backward_path_delay = 0.;
+    temp_ptr->backward_path_congestion = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = RRNodeId::INVALID();
     temp_ptr->path_data = nullptr;
