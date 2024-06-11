@@ -205,7 +205,7 @@ class Graphs:
         "test name",
     ]
 
-    __barh_types = ["sink atom block model", "sink cluster block type", "node type"]
+    __barh_types = ["sink atom block model", "sink cluster block type", "node type", "test name"]
 
     def make_scatter_plot(
         self, comp: str, plot_type: ScatterPlotType, legend_column: str, first_it_only: bool
@@ -346,14 +346,14 @@ class Graphs:
         title = "Average " + comp
 
         if use_absolute:
-            title += " Absolute "
+            title += " Absolute"
             curr_dir = self.__directory + "/bar_absolute_error/" + comp
             y_label = "average absolute error"
         else:
             curr_dir = self.__directory + "/bar_error/" + comp
             y_label = "average error"
 
-        title += "Error by " + column + " for "
+        title += " Error by " + column + " for "
         title = title.title()
         title += self.__test_name
 
@@ -377,7 +377,7 @@ class Graphs:
 
         avg_error = {}
 
-        for elem in curr_df[column].unique():
+        for elem in custom_sort(list(curr_df[column].unique())):
             rows = curr_df[column].isin([elem])
 
             if use_absolute:
@@ -617,7 +617,7 @@ class Graphs:
         plt.close()
 
         if should_print:
-            print("Created ", curr_dir + "/" + file_name, sep="")
+            print("Created ", curr_dir + "/" + file_name, sep=
 
     def make_standard_pie_charts(self, test_name_plot: bool):
         if test_name_plot:
@@ -637,7 +637,8 @@ class Graphs:
                             proc = Process(
                                 target=self.make_pie_chart, args=(comp, col, first_it, weighted)
                             )
-                            start_process(proc)
+                            start_procedef
+                            make_correlation
 
     def make_standard_plots(self, test_name_plot: bool):
         if "pie" in graph_types:
