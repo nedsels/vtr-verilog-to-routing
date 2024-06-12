@@ -55,7 +55,7 @@ column_names = [
     "congestion error",
     "congestion absolute error",
     "congestion % error",
-    "test name",
+    "test name"
 ]
 
 processes = []
@@ -161,10 +161,13 @@ class ScatterPlotType(Enum):
 
 class Graphs:
     def __init__(self, df: pd.DataFrame, results_folder: str, test_name: str):
-        self.df = df.copy()
-        self.df.insert(len(self.df.columns), "color", "#0000ff")
+        self.__df = df.copy()
+        self.__df.insert(len(self.__df.columns), "color", "#0000ff")
 
-        self.df_first_it = self.df[self.df["iteration no."].isin([1])][:]
+        self.__df_first_it = self.__df[self.__df["iteration no."].isin([1])][:]
+
+        if "bar_ra" in graph_types:
+            self.__count_routing_attempts()
 
         self.__directory = "./lookahead_verifier_output/" + results_folder
 
@@ -175,6 +178,7 @@ class Graphs:
 
     __df = pd.DataFrame
     __df_first_it = pd.DataFrame
+    __df_ra = pd.DataFrame
     __directory = "./lookahead_verifier_output/unspecified"
     __test_name = ""
 
@@ -186,6 +190,7 @@ class Graphs:
         __directory + "/heatmap_absolute_error",
         __directory + "/heatmap_error",
         __directory + "/proportion_under_threshold",
+        __directory + "/routing_attempt_rate"
     ]
 
     __standard_scatter_columns = [
@@ -205,10 +210,55 @@ class Graphs:
         "test name",
     ]
 
-    __barh_types = ["sink atom block model", "sink cluster block type", "node type"]
+    __barh_types = ["sink block name", "sink atom block model", "sink cluster block type", "node type", "test name"]
+
+    __sink_block_attributes = ["sink atom block model", "sink cluster block type", "sink cluster tile height",
+                               "test name"]
+    __sinks_by_attribute = {}
+
+    def __count_routing_attempts(self):
+        for attr in self.__sink_block_attributes:
+            self.__sinks_by_attribute[attr] = {}
+
+            for name in list(self.__df[attr].unique()):
+                self.__sinks_by_attribute[attr][name] = self.__df[self.__df[attr].isin([name])]["sink node"].nunique()
+
+        self.__df_ra = pd.DataFrame(
+            columns=["sink node", "iterations", "num. routing attempts"] + self.__sink_block_attributes)
+
+        prev_sink = -1
+        for index, row in self.__df.iterrows():
+            if row["sink node"] == prev_sink:
+                continue
+
+            curr_df = self.__df_ra[self.__df_ra["sink node"].isin([row["sink node"]])]
+            if curr_df.empty:
+                new_row = pd.DataFrame(columns=self.__df_ra.columns.to_list(), index=[0])
+                new_row.at[0, "iterations"] = set()
+
+                for col in self.__df_ra.columns.to_list():
+                    if col == "num. routing attempts":
+                        new_row[col][0] = 1
+                    elif col == "iterations":
+                        new_row.at[0, col].add(row["iteration no."])
+                    else:
+                        new_row[col][0] = row[col]
+
+                self.__df_ra = pd.concat([self.__df_ra, new_row], ignore_index=True)
+            else:
+                changing_row = self.__df_ra.index[self.__df_ra["sink node"] == row["sink node"]].tolist()[0]
+
+                if row["iteration no."] not in curr_df.at[changing_row, "iterations"]:
+                    self.__df_ra.at[changing_row, "num. routing attempts"] += 1
+                    self.__df_ra.at[changing_row, "iterations"].add(row["iteration no."])
+
+            prev_sink = row["sink node"]
+
+        self.__df_ra = self.__df_ra.sort_values(by=["test name", "sink node"])
+        self.__df_ra = self.__df_ra.reset_index()
 
     def make_scatter_plot(
-        self, comp: str, plot_type: ScatterPlotType, legend_column: str, first_it_only: bool
+            self, comp: str, plot_type: ScatterPlotType, legend_column: str, first_it_only: bool
     ):
         if (not first_it_output and first_it_only) or (not all_it_output and not first_it_only):
             return
@@ -230,12 +280,12 @@ class Graphs:
         if first_it_only:
             title += " (first iteration)"
             file_name = "_first_it"
-            curr_df = self.df_first_it
+            curr_df = self.__df_first_it
             curr_dir += "/first_it"
         else:
             title += " (all iterations)"
             file_name = "_all_it"
-            curr_df = self.df
+            curr_df = self.__df
             curr_dir += "/all_it"
 
         file_name = "color_" + column_file_name(legend_column) + "_" + comp + file_name + ".png"
@@ -245,7 +295,7 @@ class Graphs:
 
         make_dir(curr_dir, False)
 
-        num_colors = self.df[legend_column].nunique() + 1
+        num_colors = self.__df[legend_column].nunique() + 1
         if legend_column == "iteration no.":
             green = Color("green")
             colors_c = list(green.range_to(Color("red"), num_colors))
@@ -331,12 +381,12 @@ class Graphs:
                             )
                             start_process(proc)
 
-    def make_bar_plot(self, comp: str, column: str, first_it_only: bool, use_absolute: bool):
+    def make_bar_graph(self, comp: str, column: str, first_it_only: bool, use_absolute: bool):
         if (
-            (not absolute_output and use_absolute)
-            or (not signed_output and not use_absolute)
-            or (not first_it_output and first_it_only)
-            or (not all_it_output and not first_it_only)
+                (not absolute_output and use_absolute)
+                or (not signed_output and not use_absolute)
+                or (not first_it_output and first_it_only)
+                or (not all_it_output and not first_it_only)
         ):
             return
 
@@ -360,12 +410,12 @@ class Graphs:
         if first_it_only:
             title += " (first iteration)"
             file_name = "_first_it"
-            curr_df = self.df_first_it
+            curr_df = self.__df_first_it
             curr_dir += "/first_it"
         else:
             title += " (all iterations)"
             file_name = "_all_it"
-            curr_df = self.df
+            curr_df = self.__df
             curr_dir += "/all_it"
 
         file_name = "by_" + column_file_name(column) + "_" + comp + file_name + ".png"
@@ -400,7 +450,7 @@ class Graphs:
         if should_print:
             print("Created ", curr_dir + "/" + file_name, sep="")
 
-    def make_standard_bar_plots(self, test_name_plot: bool):
+    def make_standard_bar_graphs(self, test_name_plot: bool):
         if test_name_plot:
             columns = self.__standard_bar_columns
         else:
@@ -413,21 +463,21 @@ class Graphs:
                 for use_abs in bool_opts:
                     for first_it in bool_opts:
                         if max_additional_threads == 0:
-                            self.make_bar_plot(comp, col, use_abs, first_it)
+                            self.make_bar_graph(comp, col, use_abs, first_it)
                         else:
                             proc = Process(
-                                target=self.make_bar_plot, args=(comp, col, use_abs, first_it)
+                                target=self.make_bar_graph, args=(comp, col, use_abs, first_it)
                             )
                             start_process(proc)
 
     def make_heatmap(
-        self, comp: str, x_column: str, y_column: str, first_it_only: bool, use_absolute: bool
+            self, comp: str, x_column: str, y_column: str, first_it_only: bool, use_absolute: bool
     ):
         if (
-            (not absolute_output and use_absolute)
-            or (not signed_output and not use_absolute)
-            or (not first_it_output and first_it_only)
-            or (not all_it_output and not first_it_only)
+                (not absolute_output and use_absolute)
+                or (not signed_output and not use_absolute)
+                or (not first_it_output and first_it_only)
+                or (not all_it_output and not first_it_only)
         ):
             return
 
@@ -453,22 +503,22 @@ class Graphs:
         if first_it_only:
             title += " (first iteration)"
             file_name = "_first_it"
-            curr_df = self.df_first_it
+            curr_df = self.__df_first_it
             curr_dir += "/first_it"
         else:
             title += " (all iterations)"
             file_name = "_all_it"
-            curr_df = self.df
+            curr_df = self.__df
             curr_dir += "/all_it"
 
         file_name = (
-            column_file_name(x_column)
-            + "_and_"
-            + column_file_name(y_column)
-            + "_"
-            + comp
-            + file_name
-            + ".png"
+                column_file_name(x_column)
+                + "_and_"
+                + column_file_name(y_column)
+                + "_"
+                + comp
+                + file_name
+                + ".png"
         )
 
         if no_replace and os.path.exists(curr_dir + "/" + file_name):
@@ -565,12 +615,12 @@ class Graphs:
         if first_it_only:
             title += " (first iteration)"
             file_name = "_first_it"
-            curr_df = self.df_first_it
+            curr_df = self.__df_first_it
             curr_dir += "/first_it"
         else:
             title += " (all iterations)"
             file_name = "_all_it"
-            curr_df = self.df
+            curr_df = self.__df
             curr_dir += "/all_it"
 
         file_name = "by_" + column_file_name(column) + "_" + comp + file_name
@@ -590,7 +640,7 @@ class Graphs:
 
         curr_df = curr_df[curr_df[f"{comp} % error"] < percent_error_threshold]
 
-        num_colors = self.df[column].nunique() + 1
+        num_colors = self.__df[column].nunique() + 1
         colors_rgb = dp.get_colors(num_colors)
         colors = []
         for color in colors_rgb:
@@ -639,6 +689,53 @@ class Graphs:
                             )
                             start_process(proc)
 
+    def make_bar_ra_graph(self, sink_attribute: str):
+        # ra: "route attempts"
+
+        check_valid_column(sink_attribute)
+
+        curr_dir = self.__directory + "/routing_attempt_rate"
+        make_dir(curr_dir, False)
+
+        file_name = "by_" + column_file_name(sink_attribute) + ".png"
+
+        title = "Routing Attempts per Sink by " + sink_attribute + " for "
+        title = title.title() + self.__test_name
+
+        attempt_rates = {}
+        for name in list(self.__df_ra[sink_attribute].unique()):
+            section = self.__df_ra[self.__df_ra[sink_attribute].isin([name])]
+
+            num_attempts = section["num. routing attempts"].sum()
+            attempt_rates[name] = num_attempts / self.__sinks_by_attribute[sink_attribute][name]
+
+        attempt_rates_df = pd.DataFrame({'col': attempt_rates})
+
+        if sink_attribute not in self.__barh_types:
+            attempt_rates_df.plot.bar(title=title, ylabel="routing attempts per sink", xlabel=sink_attribute,
+                                      legend=False)
+        else:
+            attempt_rates_df.plot.barh(title=title, ylabel=sink_attribute, xlabel="routing attempts per sink",
+                                       legend=False)
+
+        plt.savefig(curr_dir + "/" + file_name, dpi=300, bbox_inches="tight")
+        plt.close()
+
+        if should_print:
+            print("Created ", curr_dir + "/" + file_name, sep="")
+
+    def make_standard_bar_ra_graphs(self, test_name_plot: bool):
+
+        for attr in self.__sink_block_attributes:
+            if attr == "test name" and not test_name_plot:
+                continue
+
+            if max_additional_threads == 0:
+                self.make_bar_ra_graph(attr)
+            else:
+                proc = Process(target=self.make_bar_ra_graph, args=(attr,))
+            start_process(proc)
+
     def make_standard_plots(self, test_name_plot: bool):
         if "pie" in graph_types:
             self.make_standard_pie_charts(test_name_plot)
@@ -647,7 +744,10 @@ class Graphs:
             self.make_standard_heatmaps()
 
         if "bar" in graph_types:
-            self.make_standard_bar_plots(test_name_plot)
+            self.make_standard_bar_graphs(test_name_plot)
+
+        if "bar_ra" in graph_types:
+            self.make_standard_bar_ra_graphs(test_name_plot)
 
         if "scatter" in graph_types:
             self.make_standard_scatter_plots(test_name_plot)
@@ -692,23 +792,21 @@ def print_df_info(df: pd.DataFrame, directory: str):
 def record_df_info(df: pd.DataFrame, directory: str):
     check_valid_df(df)
 
-    if first_it_output:
-        df_first_iteration = df[df["iteration no."].isin([1])][:]
+    df_first_iteration = df[df["iteration no."].isin([1])][:]
 
-        print_and_write(
-            "\nFIRST ITERATION RESULTS ----------------------------------------------------------------------\n",
-            directory,
-        )
+    print_and_write(
+        "\nFIRST ITERATION RESULTS ----------------------------------------------------------------------\n",
+        directory,
+    )
 
-        print_df_info(df_first_iteration, directory)
+    print_df_info(df_first_iteration, directory)
 
-    if all_it_output:
-        print_and_write(
-            "\nALL ITERATIONS RESULTS -----------------------------------------------------------------------\n",
-            directory,
-        )
+    print_and_write(
+        "\nALL ITERATIONS RESULTS -----------------------------------------------------------------------\n",
+        directory,
+    )
 
-        print_df_info(df, directory)
+    print_df_info(df, directory)
 
     print_and_write(
         "\n----------------------------------------------------------------------------------------------\n",
@@ -733,18 +831,18 @@ def create_error_columns(df: pd.DataFrame):
     df["congestion error"] = df["predicted congestion"] - df["actual congestion"]
     df["congestion absolute error"] = abs(df["congestion error"])
     df["congestion % error"] = 100.0 * (
-        (df["predicted congestion"] / df["actual congestion"]) - 1.0
+            (df["predicted congestion"] / df["actual congestion"]) - 1.0
     )
 
-    df = df.fillna(0.0)
+    df.fillna(0.0, inplace=True)
 
 
 def main():
     description = (
-        "Parses data from lookahead_verifier_info.csv file(s) generated when running VPR on this branch. "
-        + "Create one or more csv files with, in the first column, the circuit/test name, and in the second "
-        + "column, the corresponding path to its lookahead info csv file. Give it a unique name, and pass "
-        + "it in as csv_files_list."
+            "Parses data from lookahead_verifier_info.csv file(s) generated when running VPR on this branch. "
+            + "Create one or more csv files with, in the first column, the circuit/test name, and in the second "
+            + "column, the corresponding path to its lookahead info csv file. Give it a unique name, and pass "
+            + "it in as csv_files_list."
     )
     parser = argparse.ArgumentParser(prog="ParseLookaheadData", description=description, epilog="")
 
@@ -763,8 +861,8 @@ def main():
         default="",
         metavar="GRAPH_TYPE",
         nargs="+",
-        help="create graphs of this type (bar, scatter, heatmap, pie, all)",
-        choices=["bar", "scatter", "heatmap", "pie", "all"],
+        help="create graphs of this type (bar, bar_ra, scatter, heatmap, pie, all)",
+        choices=["bar", "bar_ra", "scatter", "heatmap", "pie", "all"],
     )
     parser.add_argument(
         "-c",
@@ -774,7 +872,7 @@ def main():
         metavar="COMPONENT",
         nargs="+",
         help="produce results investigating this backwards-path component (cost, delay, congestion, "
-        "all)",
+             "all)",
         choices=["cost", "delay", "congestion", "all"],
     )
     parser.add_argument(
@@ -802,7 +900,7 @@ def main():
         metavar="FOLDER_NAME",
         nargs=1,
         help="instead of producing results from individual input csv files, collect data from all input"
-        "files, and produce results for this collection (note: FOLDER_NAME should not be a path)",
+             "files, and produce results for this collection (note: FOLDER_NAME should not be a path)",
     )
     parser.add_argument(
         "--threshold",
@@ -811,7 +909,7 @@ def main():
         metavar="THRESHOLD",
         nargs=1,
         help="the percent threshold to the be upper limit for the error of the data used to create "
-        "pie graphs",
+             "pie graphs",
     )
     parser.add_argument(
         "--replace",
@@ -838,7 +936,7 @@ def main():
     global all_it_output
 
     if args.all:
-        graph_types = ["bar", "scatter", "heatmap", "pie"]
+        graph_types = ["bar", "bar_ra", "scatter", "heatmap", "pie"]
         components = ["cost", "delay", "congestion"]
         absolute_output = True
         signed_output = True
@@ -848,7 +946,7 @@ def main():
     else:
         graph_types = args.graph_types
         if "all" in graph_types:
-            graph_types = ["bar", "scatter", "heatmap", "pie"]
+            graph_types = ["bar", "bar_ra", "scatter", "heatmap", "pie"]
 
         components = args.components
         if "all" in components:
@@ -902,6 +1000,16 @@ def main():
 
             df = pd.read_csv(file_path)
             df = df.reset_index(drop=True)
+            df = df.drop(columns=["cost error",
+                                  "cost absolute error",
+                                  "cost % error",
+                                  "delay error",
+                                  "delay absolute error",
+                                  "delay % error",
+                                  "congestion error",
+                                  "congestion absolute error",
+                                  "congestion % error",
+                                  "test name"], errors="ignore")
             create_error_columns(df)
             df.insert(len(df.columns), "test name", test_name)
 
