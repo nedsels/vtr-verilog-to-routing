@@ -5,9 +5,10 @@
 #include "netlist_routers.h"
 #include "route_net.h"
 #include "vtr_time.h"
+#include "rl_route_agent.h"
 
 template<typename HeapType>
-inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry, float pres_fac, float worst_neg_slack) {
+inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry, float worst_neg_slack) {
     /* Reset results for each thread */
     for (auto& results : _results_th) {
         results = RouteIterResults();
@@ -15,7 +16,6 @@ inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry,
 
     /* Set the routing parameters: they won't change until the next call and that saves us the trouble of passing them around */
     _itry = itry;
-    _pres_fac = pres_fac;
     _worst_neg_slack = worst_neg_slack;
 
     /* Organize netlist into a PartitionTree.
@@ -49,24 +49,24 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
     vtr::Timer t;
     for (auto net_id : node.nets) {
         auto flags = route_net(
-            _routers_th.local(),
-            _net_list,
-            net_id,
-            _itry,
-            _pres_fac,
-            _router_opts,
-            _connections_inf,
-            _results_th.local().stats,
-            _net_delay,
-            _netlist_pin_lookup,
-            _timing_info.get(),
-            _pin_timing_invalidator,
-            _budgeting_inf,
-            _worst_neg_slack,
-            _routing_predictor,
-            _choking_spots[net_id],
-            _is_flat,
-            route_ctx.route_bb[net_id]);
+                _routers_th.local(),
+                _net_list,
+                net_id,
+                _itry,
+                _router_opts,
+                _connections_inf,
+                _results_th.local().stats,
+                _net_delay,
+                _netlist_pin_lookup,
+                _timing_info.get(),
+                _pin_timing_invalidator,
+                _budgeting_inf,
+                _worst_neg_slack,
+                _routing_predictor,
+                _choking_spots[net_id],
+                _is_flat,
+                route_ctx.route_bb[net_id],
+                _rl_agent);
 
         if (!flags.success && !flags.retry_with_full_bb) {
             /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */
@@ -107,4 +107,9 @@ void ParallelNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
 template<typename HeapType>
 void ParallelNetlistRouter<HeapType>::set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info) {
     _timing_info = timing_info;
+}
+
+template<typename HeapType>
+RLRouteAgent& ParallelNetlistRouter<HeapType>::rl_agent() {
+    return _rl_agent;
 }

@@ -45,15 +45,17 @@ class ParallelNetlistRouter : public NetlistRouter {
         , _budgeting_inf(budgeting_inf)
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
-        , _is_flat(is_flat) {}
+        , _is_flat(is_flat)
+        , _rl_agent(RLRouteAgent(router_opts)) {}
     ~ParallelNetlistRouter() {}
 
     /** Run a single iteration of netlist routing for this->_net_list. This usually means calling
      * \ref route_net for each net, which will handle other global updates.
      * \return RouteIterResults for this iteration. */
-    RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
+    RouteIterResults route_netlist(int itry, float worst_neg_slack);
     void set_rcv_enabled(bool x);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
+    RLRouteAgent& rl_agent();
 
   private:
     /** A single task to route nets inside a PartitionTree node and add tasks for its child nodes to task group \p g. */
@@ -90,10 +92,10 @@ class ParallelNetlistRouter : public NetlistRouter {
     const RoutingPredictor& _routing_predictor;
     const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& _choking_spots;
     bool _is_flat;
+    RLRouteAgent _rl_agent;
 
     /** Cached routing parameters for current iteration (inputs to \see route_netlist()) */
     int _itry;
-    float _pres_fac;
     float _worst_neg_slack;
 };
 

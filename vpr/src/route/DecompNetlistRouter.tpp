@@ -10,7 +10,7 @@
 #include "vtr_time.h"
 
 template<typename HeapType>
-inline RouteIterResults DecompNetlistRouter<HeapType>::route_netlist(int itry, float pres_fac, float worst_neg_slack) {
+inline RouteIterResults DecompNetlistRouter<HeapType>::route_netlist(int itry, float worst_neg_slack) {
     /* Reset results for each thread */
     for (auto& results : _results_th) {
         results = RouteIterResults();
@@ -18,7 +18,6 @@ inline RouteIterResults DecompNetlistRouter<HeapType>::route_netlist(int itry, f
 
     /* Set the routing parameters: they won't change until the next call and that saves us the trouble of passing them around */
     _itry = itry;
-    _pres_fac = pres_fac;
     _worst_neg_slack = worst_neg_slack;
 
     /* Organize netlist into a PartitionTree.
@@ -161,25 +160,25 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
             }
             /* decompose_and_route fails when we get bad flags, so we only need to handle them here */
             auto flags = route_net(
-                _routers_th.local(),
-                _net_list,
-                net_id,
-                _itry,
-                _pres_fac,
-                _router_opts,
-                _connections_inf,
-                _results_th.local().stats,
-                _net_delay,
-                _netlist_pin_lookup,
-                _timing_info.get(),
-                _pin_timing_invalidator,
-                _budgeting_inf,
-                _worst_neg_slack,
-                _routing_predictor,
-                _choking_spots[net_id],
-                _is_flat,
-                route_ctx.route_bb[net_id],
-                false);
+                    _routers_th.local(),
+                    _net_list,
+                    net_id,
+                    _itry,
+                    _router_opts,
+                    _connections_inf,
+                    _results_th.local().stats,
+                    _net_delay,
+                    _netlist_pin_lookup,
+                    _timing_info.get(),
+                    _pin_timing_invalidator,
+                    _budgeting_inf,
+                    _worst_neg_slack,
+                    _routing_predictor,
+                    _choking_spots[net_id],
+                    _is_flat,
+                    route_ctx.route_bb[net_id],
+                    _rl_agent,
+                    false);
             if (!flags.success && !flags.retry_with_full_bb) {
                 /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */
                 _results_th.local().is_routable = false;
@@ -209,26 +208,26 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
             /* Route the full vnet. Again we don't care about the flags, they should be handled by the regular path */
             auto sink_mask = get_vnet_sink_mask(vnet);
             route_net(
-                _routers_th.local(),
-                _net_list,
-                vnet.net_id,
-                _itry,
-                _pres_fac,
-                _router_opts,
-                _connections_inf,
-                _results_th.local().stats,
-                _net_delay,
-                _netlist_pin_lookup,
-                _timing_info.get(),
-                _pin_timing_invalidator,
-                _budgeting_inf,
-                _worst_neg_slack,
-                _routing_predictor,
-                _choking_spots[vnet.net_id],
-                _is_flat,
-                vnet.clipped_bb,
-                false,
-                sink_mask);
+                    _routers_th.local(),
+                    _net_list,
+                    vnet.net_id,
+                    _itry,
+                    _router_opts,
+                    _connections_inf,
+                    _results_th.local().stats,
+                    _net_delay,
+                    _netlist_pin_lookup,
+                    _timing_info.get(),
+                    _pin_timing_invalidator,
+                    _budgeting_inf,
+                    _worst_neg_slack,
+                    _routing_predictor,
+                    _choking_spots[vnet.net_id],
+                    _is_flat,
+                    vnet.clipped_bb,
+                    _rl_agent,
+                    false,
+                    sink_mask);
         }
     }
 
@@ -285,26 +284,26 @@ bool DecompNetlistRouter<HeapType>::decompose_and_route_net(ParentNetId net_id, 
 
     /* Route the net with the given mask: only the sinks we ask for will be routed */
     auto flags = route_net(
-        _routers_th.local(),
-        _net_list,
-        net_id,
-        _itry,
-        _pres_fac,
-        _router_opts,
-        _connections_inf,
-        _results_th.local().stats,
-        _net_delay,
-        _netlist_pin_lookup,
-        _timing_info.get(),
-        _pin_timing_invalidator,
-        _budgeting_inf,
-        _worst_neg_slack,
-        _routing_predictor,
-        _choking_spots[net_id],
-        _is_flat,
-        net_bb,
-        false,
-        sink_mask);
+            _routers_th.local(),
+            _net_list,
+            net_id,
+            _itry,
+            _router_opts,
+            _connections_inf,
+            _results_th.local().stats,
+            _net_delay,
+            _netlist_pin_lookup,
+            _timing_info.get(),
+            _pin_timing_invalidator,
+            _budgeting_inf,
+            _worst_neg_slack,
+            _routing_predictor,
+            _choking_spots[net_id],
+            _is_flat,
+            net_bb,
+            _rl_agent,
+            false,
+            sink_mask);
 
     if (!flags.success) { /* Even if flags.retry_with_full_bb is set, better to bail out here */
         return false;
@@ -386,26 +385,26 @@ bool DecompNetlistRouter<HeapType>::decompose_and_route_vnet(VirtualNet& vnet, c
 
     /* Route the *parent* net with the given mask: only the sinks we ask for will be routed */
     auto flags = route_net(
-        _routers_th.local(),
-        _net_list,
-        vnet.net_id,
-        _itry,
-        _pres_fac,
-        _router_opts,
-        _connections_inf,
-        _results_th.local().stats,
-        _net_delay,
-        _netlist_pin_lookup,
-        _timing_info.get(),
-        _pin_timing_invalidator,
-        _budgeting_inf,
-        _worst_neg_slack,
-        _routing_predictor,
-        _choking_spots[vnet.net_id],
-        _is_flat,
-        vnet.clipped_bb,
-        false,
-        sink_mask);
+            _routers_th.local(),
+            _net_list,
+            vnet.net_id,
+            _itry,
+            _router_opts,
+            _connections_inf,
+            _results_th.local().stats,
+            _net_delay,
+            _netlist_pin_lookup,
+            _timing_info.get(),
+            _pin_timing_invalidator,
+            _budgeting_inf,
+            _worst_neg_slack,
+            _routing_predictor,
+            _choking_spots[vnet.net_id],
+            _is_flat,
+            vnet.clipped_bb,
+            _rl_agent,
+            false,
+            sink_mask);
 
     if (!flags.success) { /* Even if flags.retry_with_full_bb is set, better to bail out here */
         PartitionTreeDebug::log("Failed to route decomposed net:\n" + describe_vnet(vnet));
@@ -678,4 +677,10 @@ vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_vnet_decomposition_mask
     }
 
     return out;
+}
+
+
+template<typename HeapType>
+RLRouteAgent& DecompNetlistRouter<HeapType>::rl_agent() {
+    return _rl_agent;
 }

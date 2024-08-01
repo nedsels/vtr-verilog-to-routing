@@ -6,7 +6,7 @@
 #include "route_net.h"
 
 template<typename HeapType>
-inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, float pres_fac, float worst_neg_slack) {
+inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, float worst_neg_slack) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     RouteIterResults out;
 
@@ -23,7 +23,6 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
             _net_list,
             net_id,
             itry,
-            pres_fac,
             _router_opts,
             _connections_inf,
             out.stats,
@@ -36,7 +35,8 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
             _routing_predictor,
             _choking_spots[net_id],
             _is_flat,
-            route_ctx.route_bb[net_id]);
+            route_ctx.route_bb[net_id],
+            _rl_agent);
 
         if (!flags.success && !flags.retry_with_full_bb) {
             /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */
@@ -70,4 +70,9 @@ void SerialNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
 template<typename HeapType>
 void SerialNetlistRouter<HeapType>::set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info) {
     _timing_info = timing_info;
+}
+
+template<typename HeapType>
+RLRouteAgent& SerialNetlistRouter<HeapType>::rl_agent() {
+    return _rl_agent;
 }

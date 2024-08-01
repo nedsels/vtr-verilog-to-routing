@@ -3,8 +3,6 @@
 /** @file Parallel and net-decomposing case for NetlistRouter. Works like
  * \see ParallelNetlistRouter, but tries to "decompose" nets and assign them to
  * the next level of the partition tree where possible. */
-#include "netlist_routers.h"
-
 #include <tbb/task_group.h>
 
 /** Maximum number of iterations for net decomposition
@@ -49,6 +47,7 @@ class DecompNetlistRouter : public NetlistRouter {
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
         , _is_flat(is_flat)
+        , _rl_agent(RLRouteAgent(router_opts))
         , _net_known_samples(net_list.nets().size())
         , _is_decomp_disabled(net_list.nets().size()) {}
     ~DecompNetlistRouter() {}
@@ -56,11 +55,12 @@ class DecompNetlistRouter : public NetlistRouter {
     /** Run a single iteration of netlist routing for this->_net_list. This usually means calling
      * \ref route_net for each net, which will handle other global updates.
      * \return RouteIterResults for this iteration. */
-    RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
+    RouteIterResults route_netlist(int itry, float worst_neg_slack);
     /** Set RCV enable flag for all routers managed by this netlist router.
      * Net decomposition does not work with RCV, so calling this fn with x=true is a fatal error. */
     void set_rcv_enabled(bool x);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
+    RLRouteAgent& rl_agent() final;
 
   private:
     /** Should we decompose this net? */
@@ -109,10 +109,10 @@ class DecompNetlistRouter : public NetlistRouter {
     const RoutingPredictor& _routing_predictor;
     const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& _choking_spots;
     bool _is_flat;
+    RLRouteAgent _rl_agent;
 
     /** Cached routing parameters for current iteration (inputs to \see route_netlist()) */
     int _itry;
-    float _pres_fac;
     float _worst_neg_slack;
 
     /** Sinks to be always sampled for decomposition for each net: [0.._net_list.size()-1]

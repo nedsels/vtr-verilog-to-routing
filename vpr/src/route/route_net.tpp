@@ -14,6 +14,7 @@
 #include "route_profiling.h"
 #include "rr_graph_fwd.h"
 #include "vtr_dynamic_bitset.h"
+#include "rl_route_agent.h"
 
 /** Attempt to route a single net.
  *
@@ -45,7 +46,6 @@ inline NetResultFlags route_net(ConnectionRouter& router,
                                 const Netlist<>& net_list,
                                 const ParentNetId& net_id,
                                 int itry,
-                                float pres_fac,
                                 const t_router_opts& router_opts,
                                 CBRR& connections_inf,
                                 RouterStats& router_stats,
@@ -59,6 +59,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
                                 const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                                 bool is_flat,
                                 const t_bb& net_bb,
+                                RLRouteAgent& rl_agent,
                                 bool should_setup = true,
                                 vtr::optional<const vtr::dynamic_bitset<>&> sink_mask = vtr::nullopt) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -141,7 +142,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.astar_offset = router_opts.astar_offset;
     cost_params.bend_cost = router_opts.bend_cost;
-    cost_params.pres_fac = pres_fac;
+    cost_params.pres_fac = rl_agent.pres_fac();
     cost_params.delay_budget = ((budgeting_inf.if_set()) ? &conn_delay_budget : nullptr);
 
     // Pre-route to clock source for clock nets (marked as global nets)
@@ -220,6 +221,11 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 
         profiling::conn_start();
 
+        // Update pres_fac using RL agent
+        VTR_ASSERT(cost_params.pres_fac == rl_agent.pres_fac());
+        rl_agent.do_action();
+        cost_params.pres_fac = rl_agent.pres_fac();
+
         // build a branch in the route tree to the target
         auto sink_flags = route_sink(router,
                                      net_list,
@@ -244,6 +250,8 @@ inline NetResultFlags route_net(ConnectionRouter& router,
             VTR_LOG("Routing failed for sink %d of net %d\n", target_pin, net_id);
             return flags;
         }
+
+        rl_agent.update_after_sink_route(tree, route_ctx.net_rr_terminals[net_id][target_pin]);
 
         profiling::conn_finish(size_t(route_ctx.net_rr_terminals[net_id][0]),
                                size_t(sink_rr),

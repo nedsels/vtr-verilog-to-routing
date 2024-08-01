@@ -11,6 +11,7 @@
 #include "route_profiling.h"
 #include "route_utils.h"
 #include "vtr_time.h"
+#include "rl_route_agent.h"
 
 bool route(const Netlist<>& net_list,
            int width_fac,
@@ -263,8 +264,14 @@ bool route(const Netlist<>& net_list,
         else
             netlist_router->set_timing_info(timing_info);
 
+        // Update RL agent actions
+        netlist_router->rl_agent().update_per_iteration(pres_fac, itry);
+
         /* Route each net */
-        RouteIterResults iter_results = netlist_router->route_netlist(itry, pres_fac, worst_negative_slack);
+        RouteIterResults iter_results = netlist_router->route_netlist(itry, worst_negative_slack);
+
+        // Get new pres_fac
+        pres_fac = netlist_router->rl_agent().pres_fac();
 
         if (!iter_results.is_routable) { /* Disconnected RRG */
             return false;
@@ -444,6 +451,7 @@ bool route(const Netlist<>& net_list,
             update_draw_pres_fac(pres_fac);
         } else {
             pres_fac *= router_opts.pres_fac_mult;
+            pres_fac = std::max(pres_fac, router_opts.initial_pres_fac);
             pres_fac = std::min(pres_fac, router_opts.max_pres_fac);
             /* Set the maximum pres_fac to the value passed by the command line argument */
             update_draw_pres_fac(pres_fac);

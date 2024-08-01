@@ -33,6 +33,7 @@
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
 #include "vpr_types.h"
+#include "rl_route_agent.h"
 
 /** Results for a single netlist routing run inside a routing iteration. */
 struct RouteIterResults {
@@ -54,7 +55,7 @@ class NetlistRouter {
     /** Run a single iteration of netlist routing for this->_net_list. This usually means calling
      * route_net for each net, which will handle other global updates.
      * \return RouteIterResults for this iteration. */
-    virtual RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack) = 0;
+    virtual RouteIterResults route_netlist(int itry, float worst_neg_slack) = 0;
 
     /** Enable RCV for each of the ConnectionRouters this NetlistRouter manages.*/
     virtual void set_rcv_enabled(bool x) = 0;
@@ -62,6 +63,8 @@ class NetlistRouter {
     /** Set this NetlistRouter's timing_info ptr. We sometimes change timing_info
      * throughout iterations, but not frequently enough to make it a public member. */
     virtual void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info) = 0;
+
+    virtual RLRouteAgent& rl_agent() = 0;
 };
 
 /* Include the derived classes here to get the HeapType-templated impls */

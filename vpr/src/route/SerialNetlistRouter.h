@@ -2,8 +2,6 @@
 
 /** @file Serial case for \ref NetlistRouter: just loop through nets */
 
-#include "netlist_routers.h"
-
 template<typename HeapType>
 class SerialNetlistRouter : public NetlistRouter {
   public:
@@ -31,12 +29,14 @@ class SerialNetlistRouter : public NetlistRouter {
         , _budgeting_inf(budgeting_inf)
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
-        , _is_flat(is_flat) {}
+        , _is_flat(is_flat)
+        , _rl_agent(RLRouteAgent(router_opts)) {}
     ~SerialNetlistRouter() {}
 
-    RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
+    RouteIterResults route_netlist(int itry, float worst_neg_slack);
     void set_rcv_enabled(bool x);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
+    RLRouteAgent& rl_agent();
 
   private:
     ConnectionRouter<HeapType> _make_router(const RouterLookahead* router_lookahead, bool is_flat) {
@@ -66,6 +66,7 @@ class SerialNetlistRouter : public NetlistRouter {
     const RoutingPredictor& _routing_predictor;
     const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& _choking_spots;
     bool _is_flat;
+    RLRouteAgent _rl_agent;
 };
 
 #include "SerialNetlistRouter.tpp"
