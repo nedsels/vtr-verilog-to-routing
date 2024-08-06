@@ -6,10 +6,12 @@
 #include "rl_route_agent.h"
 
 RLRouteAgent::RLRouteAgent(const t_router_opts& router_opts)
-    : enabled_(false)
-    , pres_fac_(router_opts.initial_pres_fac)
+    : itry_(0)
+    , pres_fac_(router_opts.first_iter_pres_fac)
+    , initial_pres_fac_(router_opts.initial_pres_fac)
     , pres_fac_mult_(router_opts.pres_fac_mult)
-    , k_step_size_(0.1f) {
+    , k_step_size_(0.1f)
+    , length_fac_(2.0f) {
     prev_cong_.resize(g_vpr_ctx.device().rr_graph.num_nodes(), 0.0);
     prev_length_.resize(g_vpr_ctx.device().rr_graph.num_nodes(), 0.0);
 
@@ -17,8 +19,10 @@ RLRouteAgent::RLRouteAgent(const t_router_opts& router_opts)
 }
 
 void RLRouteAgent::update_per_iteration(float pres_fac, int itry) {
-    if (itry > 1) {
-        enabled_ = true;
+    itry_ = itry;
+
+    if (itry_ <= 1) {
+        return;
     }
 
     // Update pres_fac
@@ -33,11 +37,11 @@ void RLRouteAgent::update_per_iteration(float pres_fac, int itry) {
     const float pres_fac_range = pres_growth_fac_ * k_expansion_factor;
 
     max_pres_fac_ = pres_fac + pres_fac_range;
-    min_pres_fac_ = std::max(pres_fac - pres_fac_range, 0.0f);
+    min_pres_fac_ = std::max(pres_fac - pres_fac_range, initial_pres_fac_);
 }
 
 size_t RLRouteAgent::do_action() {
-    if (!enabled_) {
+    if (itry_ <= 1) {
         return -1;
     }
 
@@ -56,6 +60,7 @@ size_t RLRouteAgent::do_action() {
         case 2:
             pres_fac_ += pres_growth_fac_ * 0.01;
             break;
+#if RLROUTE_IMPL == 1 || RLROUTE_IMPL == 7 || RLROUTE_IMPL == 9
         case 4:
             pres_fac_ -= pres_growth_fac_ * 0.05;
             break;
@@ -65,6 +70,22 @@ size_t RLRouteAgent::do_action() {
         case 6:
             pres_fac_ -= pres_growth_fac_ * 0.1;
             break;
+#elif RLROUTE_IMPL == 2
+        case 4:
+            pres_fac_ -= pres_growth_fac_ * 0.05;
+            break;
+        case 5:
+            pres_fac_ -= pres_growth_fac_ * 0.01;
+            break;
+#elif RLROUTE_IMPL == 4
+        case 4:
+            pres_fac_ -= pres_growth_fac_ * 0.01;
+            break;
+#elif RLROUTE_IMPL == 3 || RLROUTE_IMPL == 5 || RLROUTE_IMPL == 6 || RLROUTE_IMPL == 8 || RLROUTE_IMPL == 10 || RLROUTE_IMPL == 11
+        case 4:
+            pres_fac_ -= pres_growth_fac_ * 0.05;
+            break;
+#endif
         case 3:
         default:
             VTR_ASSERT_SAFE(action_index == 3);
@@ -72,6 +93,9 @@ size_t RLRouteAgent::do_action() {
     }
 
     // Clip pres_fac to upper and lower bounds
+    if (pres_fac_ >= max_pres_fac_ || pres_fac_ <= min_pres_fac_) {
+        action_index = 3;
+    }
     pres_fac_ = std::max(min_pres_fac_, pres_fac_);
     pres_fac_ = std::min(max_pres_fac_, pres_fac_);
 
@@ -100,13 +124,15 @@ void RLRouteAgent::update_probability_distribution() {
 }
 
 void RLRouteAgent::update_after_sink_route(const RouteTree& tree, RRNodeId sink_node) {
-    if (!enabled_) {
+    if (itry_ <= 1) {
         return;
     }
 
     // Determine reward
     int reward = calculate_reward(tree, sink_node);
-    // VTR_LOG("Reward: %d\n", reward);
+    if (reward) {
+        // VTR_LOG("Reward: %d\n", reward);
+    }
 
     // Update action reward prediction (equation 2.5)
     ActionData& action = action_data_[curr_action_index_];
@@ -122,14 +148,15 @@ void RLRouteAgent::update_after_sink_route(const RouteTree& tree, RRNodeId sink_
             curr_action.preference -= k_step_size_ * (reward - curr_action.prediction) * curr_action.probability;
     }
 
-    // VTR_LOG("Updating probability distribution:\n\t");
-
     update_probability_distribution();
 
-    for (double prob : probability_distribution_.probabilities()) {
-        // VTR_LOG("%.2f ", prob);
+    if (reward) {
+        // VTR_LOG("Updating probability distribution... ");
+        for (double prob : probability_distribution_.probabilities()) {
+            // VTR_LOG("%.2f ", prob);
+        }
+        // VTR_LOG("\n");
     }
-    // VTR_LOG("\n");
 }
 
 float RLRouteAgent::pres_fac() {
@@ -165,16 +192,48 @@ int RLRouteAgent::calculate_reward(const RouteTree& tree, RRNodeId sink_node) {
     int cong_diff = curr_cong - prev_cong_[sink_node];
     int length_diff = curr_length - prev_length_[sink_node];
 
+#if (RLROUTE_IMPL >= 1 && RLROUTE_IMPL <= 4)
+    // FORMULA #1
+    int reward = (cong_diff <= 0) ? -cong_diff : 0;
+
+#elif RLROUTE_IMPL == 5
+    // FORMULA #2
+    int reward = (length_diff <= 0) ? -length_diff : 0;
+
+#elif RLROUTE_IMPL == 6
+    // FORMULA #3
+    int reward = -length_diff;
+
+#elif RLROUTE_IMPL == 7 || RLROUTE_IMPL == 8
+    // FORMULA #4
+    int reward;
+    if (length_diff > 0 && cong_diff > 0) {
+        reward = (int)-log(length_diff);
+        float LENGTH_FAC_GROWTH_RATE = 0.9;
+        length_fac_ *= LENGTH_FAC_GROWTH_RATE;
+    } else if (length_diff < 0 && cong_diff < 0) {
+        reward = cong_diff * length_diff;
+    } else {
+        reward = 0;
+    }
+
+#elif RLROUTE_IMPL == 9 || RLROUTE_IMPL == 10
+    // FORMULA #5
     int reward = rand();
 
-    //    int reward;
-    //    if (length_diff > 0 && cong_diff > 0) {
-    //        reward = (int)-log(length_diff);
-    //    } else if (length_diff < 0 && cong_diff < 0) {
-    //        reward = cong_diff * length_diff;
-    //    } else {
-    //        reward = 0;
-    //    }
+#elif RLROUTE_IMPL == 11
+    // FORMULA #6
+    int reward;
+    if (length_diff > 0 && cong_diff > 0) {
+        reward = (int)(-length_diff * length_fac_);
+        float LENGTH_FAC_GROWTH_RATE = 0.9;
+        length_fac_ *= LENGTH_FAC_GROWTH_RATE;
+    } else if (length_diff < 0 && cong_diff < 0) {
+        reward = cong_diff * length_diff;
+    } else {
+        reward = 0;
+    }
+#endif
 
     prev_cong_[sink_node] = curr_cong;
     prev_length_[sink_node] = curr_length;
