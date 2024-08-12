@@ -139,7 +139,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 
     t_conn_delay_budget conn_delay_budget;
     t_conn_cost_params cost_params;
-    cost_params.astar_fac = router_opts.astar_fac;
+    cost_params.astar_fac = rl_agent.astar_fac();
     cost_params.astar_offset = router_opts.astar_offset;
     cost_params.bend_cost = router_opts.bend_cost;
     cost_params.pres_fac = rl_agent.pres_fac();
@@ -224,6 +224,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
         // Update pres_fac using RL agent
         VTR_ASSERT(cost_params.pres_fac == rl_agent.pres_fac());
         rl_agent.do_action();
+        cost_params.astar_fac = rl_agent.astar_fac();
         cost_params.pres_fac = rl_agent.pres_fac();
 
         // build a branch in the route tree to the target
@@ -251,7 +252,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
             return flags;
         }
 
-        rl_agent.update_after_sink_route(tree, route_ctx.net_rr_terminals[net_id][target_pin]);
+        rl_agent.update_after_sink_route(tree, route_ctx.net_rr_terminals[net_id][target_pin], router_stats);
 
         profiling::conn_finish(size_t(route_ctx.net_rr_terminals[net_id][0]),
                                size_t(sink_rr),
