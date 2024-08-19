@@ -5,7 +5,7 @@
 #ifndef VTR_RL_ROUTE_AGENT_H
 #define VTR_RL_ROUTE_AGENT_H
 
-#define RLROUTE_IMPL 16
+#define RLROUTE_IMPL 18
 
 #include <array>
 #include <random>
@@ -86,6 +86,35 @@ struct astar_fac_data {
                                  float& length_fac);
 };
 
+struct criticality_exp_data {
+    float criticality_exp_;
+
+    std::array<ActionData, 7> action_data_;
+
+    size_t curr_action_index_;
+    std::default_random_engine generator_;
+    std::discrete_distribution<> probability_distribution_;
+
+    int calculate_reward(const RouteTree& tree,
+                         std::vector<RRNodeId> sink_nodes,
+                         vtr::vector<RRNodeId, int>& prev_cong,
+                         vtr::vector<RRNodeId, int>& prev_length,
+                         const RouterStats& stats,
+                         int& prev_heap_ops,
+                         int itry,
+                         float& length_fac);
+    void update_probability_distribution();
+    void update_after_sink_route(const RouteTree& tree,
+                                 std::vector<RRNodeId> sink_nodes,
+                                 vtr::vector<RRNodeId, int>& prev_cong,
+                                 vtr::vector<RRNodeId, int>& prev_length,
+                                 const RouterStats& stats,
+                                 float k_step_size,
+                                 int& prev_heap_ops,
+                                 const int itry,
+                                 float& length_fac);
+};
+
 class RLRouteAgent {
   public:
     RLRouteAgent(const t_router_opts& router_opts);
@@ -95,10 +124,11 @@ class RLRouteAgent {
 
     void update_per_iteration(float pres_fac, int itry);
     void do_action();
-    void update_after_sink_route(const RouteTree& tree, RRNodeId sink_node, const RouterStats& stats);
+    void update_after_sink_route(const RouteTree& tree, std::vector<RRNodeId> sink_nodes, const RouterStats& stats);
 
     float pres_fac();
     float astar_fac();
+    float criticality_exp();
 
   private:
     void update_probability_distribution();
@@ -114,6 +144,7 @@ class RLRouteAgent {
 
     pres_fac_data pres_fac_data_;
     astar_fac_data astar_fac_data_;
+    criticality_exp_data criticality_exp_data_;
 };
 
 #endif //VTR_RL_ROUTE_AGENT_H

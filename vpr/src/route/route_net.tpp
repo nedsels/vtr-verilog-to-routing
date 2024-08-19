@@ -117,13 +117,18 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 
     auto remaining_targets = sink_mask_to_vector(remaining_targets_mask, num_sinks);
 
+#if (RLROUTE_IMPL >= 17 && RLROUTE_IMPL <= 18)
+    // Update criticality_exp using RL agent
+    rl_agent.do_action();
+#endif
+
     // calculate criticality of remaining target pins
     for (int ipin : remaining_targets) {
         auto pin = net_list.net_pin(net_id, ipin);
         pin_criticality[ipin] = get_net_pin_criticality(timing_info,
                                                         netlist_pin_lookup,
                                                         router_opts.max_criticality,
-                                                        router_opts.criticality_exp,
+                                                        rl_agent.criticality_exp(),
                                                         net_id,
                                                         pin,
                                                         is_flat);
@@ -202,10 +207,16 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     }
 
     // explore in order of decreasing criticality (no longer need sink_order array)
+#if (RLROUTE_IMPL >= 17 && RLROUTE_IMPL <= 19)
+    std::vector<RRNodeId> sink_nodes;
+#endif
     for (unsigned itarget = 0; itarget < remaining_targets.size(); ++itarget) {
         int target_pin = remaining_targets[itarget];
 
         RRNodeId sink_rr = route_ctx.net_rr_terminals[net_id][target_pin];
+#if (RLROUTE_IMPL >= 17 && RLROUTE_IMPL <= 19)
+        sink_nodes.push_back(sink_rr);
+#endif
 
         enable_router_debug(router_opts, net_id, sink_rr, itry, &router);
 
@@ -221,11 +232,14 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 
         profiling::conn_start();
 
-        // Update pres_fac using RL agent
+#if RLROUTE_IMPL <= 16
+        // Update pres_fac and astar_fac using RL agent
         VTR_ASSERT(cost_params.pres_fac == rl_agent.pres_fac());
+        VTR_ASSERT(cost_params.astar_fac == rl_agent.astar_fac());
         rl_agent.do_action();
         cost_params.astar_fac = rl_agent.astar_fac();
         cost_params.pres_fac = rl_agent.pres_fac();
+#endif
 
         // build a branch in the route tree to the target
         auto sink_flags = route_sink(router,
@@ -252,7 +266,9 @@ inline NetResultFlags route_net(ConnectionRouter& router,
             return flags;
         }
 
-        rl_agent.update_after_sink_route(tree, route_ctx.net_rr_terminals[net_id][target_pin], router_stats);
+#if RLROUTE_IMPL <= 16
+        rl_agent.update_after_sink_route(tree, {route_ctx.net_rr_terminals[net_id][target_pin]}, router_stats);
+#endif
 
         profiling::conn_finish(size_t(route_ctx.net_rr_terminals[net_id][0]),
                                size_t(sink_rr),
@@ -260,6 +276,10 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 
         ++router_stats.connections_routed;
     } // finished all sinks
+
+#if (RLROUTE_IMPL >= 17 && RLROUTE_IMPL <= 19)
+    rl_agent.update_after_sink_route(tree, sink_nodes, router_stats);
+#endif
 
     ++router_stats.nets_routed;
     profiling::net_finish();
